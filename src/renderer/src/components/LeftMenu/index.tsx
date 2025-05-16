@@ -1,0 +1,207 @@
+import React, { useEffect, useState } from "react";
+import { menuDataProps } from '@renderer/InterFace'
+import { RiHomeHeartFill } from 'react-icons/ri'
+import { RiNeteaseCloudMusicFill } from 'react-icons/ri'
+import { HiMiniFolderArrowDown } from 'react-icons/hi2'
+import { BiSolidTimeFive } from 'react-icons/bi'
+import { FaMusic } from 'react-icons/fa6'
+import { useNavigate } from 'react-router-dom'
+import {
+  addToast,
+  Input,
+  Listbox,
+  ListboxItem,
+  ListboxSection
+} from "@heroui/react";
+import { IoIosAdd } from 'react-icons/io'
+import { useDispatch, useSelector } from 'react-redux'
+import { deleteMyLikeMusicList, setMyLikeMusic } from "@renderer/store/counterSlice";
+import { v4 as uuidv4 } from 'uuid'
+import { LikeFill } from "@renderer/assets/SVG";
+import { useContextMenuTrigger } from "@renderer/components/ContextMenuProvider/useContextMenuTrigger";
+import ContextMenuProvider, { ContextMenuItem } from "@renderer/components/ContextMenuProvider";
+import { ModalWrapper } from "@renderer/components/ModalWrapper";
+
+const LeftMenu: React.FC = () => {
+  const iconClasses = 'text-[18px] text-default-500 pointer-events-none flex-shrink-0'
+  const navigate = useNavigate()
+  const dispatch = useDispatch();
+  const [playlistName, setPlaylistName] = useState('');  // 歌单名称
+  const [isOpen, setIsOpen] = useState(false) //创建歌单模态框
+  const [MusicOpen, setMusicOpen] = useState(false) // 删除模态框
+  const myLikeMusic = useSelector((state: any) => state.counter.myLikeMusic); //我喜欢的歌单
+  const { handleContextMenu, hideAll} = useContextMenuTrigger()//右键菜单
+  const [menuItemsInfo, setMenuItemsInfo] = useState<any>('') //歌单信息
+  //内容
+  const menuData: menuDataProps[] = [
+    {
+      title: '发现音乐',
+      list: [
+        { icon: <RiHomeHeartFill className={iconClasses} />, label: '为你推荐', name: '' },
+        {
+          icon: <RiNeteaseCloudMusicFill className={iconClasses} />,
+          label: '乐库',
+          name: 'MusicLibrary'
+        }
+      ]
+    },
+    {
+      title: '我得音乐',
+      list: [
+        {
+          icon: <HiMiniFolderArrowDown className={iconClasses} />,
+          label: '本地与下载',
+          name: 'LocalMusic'
+        },
+        { icon: <BiSolidTimeFive className={iconClasses} />, label: '最近播放', name: 'historyMusic' },
+        { icon: <FaMusic className={iconClasses} />, label: '全部音乐', name: 'AllMusic' }
+      ]
+    }
+  ]
+  const errorMessage =
+    playlistName.trim().length === 0
+      ? '内容不能为空'
+      : playlistName.length > 8
+        ? '内容过长（最多8个字）'
+        : myLikeMusic.some((item) => item.name === playlistName) // 注意这里是 item.name
+          ? '歌单名字已存在'
+          : '';
+  const isInvalid = errorMessage !== '';
+  //每个页面跳转
+  const menuClick = (key: string | number): void => {
+    navigate(`/${key}`)
+  }
+  // 关闭删除模态框
+  const MusicHandleClose = (): void => setMusicOpen(false)
+  //提交删除模态框
+  const onSubmitData = (): void => {
+    dispatch(deleteMyLikeMusicList({ id: menuItemsInfo.id }))
+    addToast({
+      title: '删除成功',
+      description: `自建歌单中的 ${menuItemsInfo.name} 已删除`,
+      color: 'success',
+      timeout: 2000
+    })
+  }
+  //关闭创建歌单模态框情况内容
+  const handleClose = (): void => {
+    setIsOpen(false);
+    setPlaylistName('');
+  }
+  // 创建歌单提交创建歌单
+  const submitData = (): void => {
+    // 检查是否有重复的歌单名
+    if (isInvalid) return; // 有错误，不提交
+    if (playlistName.trim() !== '') {
+      // 更新 Redux 状态
+      const newPlaylist = {
+        id: uuidv4(), // 使用时间戳作为歌单 ID
+        name: playlistName,
+        songs: [],
+      };
+
+      dispatch(setMyLikeMusic(newPlaylist));  // 更新 Redux 状态
+      setPlaylistName('');  // 清空输入框
+    }
+  };
+  //右键菜单内容
+  const menuItems: ContextMenuItem[] = [
+    {
+      label: '删除',
+      onClick: ({ props }: any) => {
+        setMenuItemsInfo(props)
+        setMusicOpen(true)
+      },
+    }
+  ]
+  useEffect(() => {
+    console.log('歌单已更新:', myLikeMusic);
+  }, [myLikeMusic]);
+  return (
+    <>
+      <Listbox
+        variant="flat"
+        color={'default'}
+        aria-label="Listbox menu with icons"
+        onAction={(key) => menuClick(key)}
+      >
+        {menuData.map((item) => (
+          <ListboxSection title={item.title} showDivider key={item.title}>
+            {item.list.map((items) => (
+              <ListboxItem key={items.name!} startContent={items.icon} textValue={items.label}>
+                <span style={{ fontSize: '12px' }}>{items.label}</span>
+              </ListboxItem>
+            ))}
+          </ListboxSection>
+        ))}
+      </Listbox>
+      {/*自建歌单*/}
+      <div className="flex justify-between items-center px-1" style={{ fontSize: '12px' }}>
+        <span style={{ color: '#a1a1aa' }} className={'px-1'}>
+          自建歌单
+        </span>
+        <span>
+          <IoIosAdd size={'20'} style={{ color: '#a1a1aa', cursor: 'pointer' }} onClick={() => setIsOpen(true)} />
+        </span>
+      </div>
+      {/*自建歌单列表*/}
+      <div>
+        <ContextMenuProvider items={menuItems} />
+        <Listbox
+          variant="flat"
+          color={'default'}
+          aria-label="Listbox menu with icons"
+          onAction={(key) => menuClick(key)}
+        >
+          {myLikeMusic.map((item) => (
+            <ListboxItem
+              key={item.id}
+              startContent={<LikeFill className={`${iconClasses} w-[18px] !text-[#ff3144]`} />}
+              style={{ fontSize: '15px' }}
+              textValue={item.name}
+              onContextMenu={handleContextMenu(item)}
+              onClick={() => hideAll()}
+            >
+              <span style={{ fontSize: '12px' }}>{item.name}</span>
+            </ListboxItem>
+          ))}
+        </Listbox>
+      </div>
+      {/* 创建歌单模态框 */}
+      <ModalWrapper
+        title="创建歌单"
+        isOpen={isOpen}
+        onClose={handleClose}
+        onAction={submitData}
+        actionText="创建"
+        buttonSize={'md'}>
+        <Input
+          label="命名歌单"
+          value={playlistName}
+          onChange={(e) => setPlaylistName(e.target.value)}
+          type="text"
+          isInvalid={isInvalid}
+          color={isInvalid ? 'danger' : 'success'}
+          errorMessage={errorMessage}
+          size={'md'}
+        />
+      </ModalWrapper>
+      {/*删除模态框*/}
+      <ModalWrapper
+        title="删除歌单"
+        isOpen={MusicOpen}
+        onClose={MusicHandleClose}
+        onAction={onSubmitData}
+        actionText={'确认删除'}
+        buttonSize={'md'}>
+        <p className={'text-[13px]'}>
+          你确定要删除这个 [ <span className={'text-[#f31260]'}>{menuItemsInfo.name}</span> ]
+          歌单吗？
+        </p>
+        <p className={'text-[#f31260] text-[13px]'}>删除后，歌单数据将无法恢复。</p>
+      </ModalWrapper>
+    </>
+  )
+};
+
+export default LeftMenu;

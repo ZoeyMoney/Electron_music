@@ -1,0 +1,73 @@
+@import "base.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+  --drag-region:drag;
+  --no-drag-region:no-drag;
+}
+
+/* 隐藏所有滚动条但允许滚动 */
+::-webkit-scrollbar {
+  display: none;
+}
+
+html, body {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;    /* Firefox */
+  overflow: auto;           /* 保留滚动功能 */
+}
+
+body {
+  overflow: hidden;
+  background-image: url('./wavy-lines.svg');
+  background-size: cover;
+  user-select: none;
+  height: 100vh;
+}
+
+.parent {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: 50px 50px auto auto 80px;
+  gap: 1px;
+  min-height: 100vh;
+  height: 100vh;
+  width: 100%;
+  -webkit-app-region: var(--no-drag-region);
+}
+
+.left_menu {
+  grid-row: span 4 / span 4;
+  /*background: red;*/
+  -webkit-app-region: var(--no-drag-region);
+  /*margin: 0 6px;*/
+  padding: 25px 16px;
+  line-height: 35px;
+  background: rgba(47, 47, 47, 0.5);
+}
+
+.headerSearch {
+  grid-column: span 4 / span 4;
+  background: #3c3c3c75;
+  -webkit-app-region: var(--drag-region);
+}
+
+.right-main {
+  grid-column: span 4 / span 4;
+  grid-row: span 3 / span 3;
+  grid-column-start: 2;
+  grid-row-start: 2;
+  -webkit-app-region: var(--no-drag-region);
+  overflow-y: auto;
+  height: 100%;
+}
+
+.MusicPlayer {
+  grid-column: span 5 / span 5;
+  grid-row-start: 5;
+  background: #3c3c3c75;
+  -webkit-app-region: var(--no-drag-region);
+  z-index: 999;
+}
