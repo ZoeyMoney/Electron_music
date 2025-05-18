@@ -8,11 +8,12 @@ import { FaPlay } from 'react-icons/fa6'
 import { getPlayListDetail } from "@renderer/Api";
 import { v4 as uuidv4 } from 'uuid'
 import { RootState } from '@renderer/store/store'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from "react-redux";
 import { columns, extractColors } from "@renderer/utils";
 import { ContextMenuItem } from '@renderer/components/ContextMenuProvider'
 import MusicTable from '@renderer/components/MusicTable'
 import { ModalState, MyLikeMusicList, SongProps } from '@renderer/InterFace'
+import { setPlayListMusic } from "@renderer/store/counterSlice";
 
 const ContentDetails: React.FC = () => {
   const location = useLocation()
@@ -25,6 +26,7 @@ const ContentDetails: React.FC = () => {
   const musicTableRef = useRef<{
     handleToggleLike: (song: SongProps, groupId?: string | number, forceAdd?: boolean) => Promise<void>
   }>(null)
+  const dispatch = useDispatch()
   // 颜色提取
   const handleImageLoad = async (): Promise<void> => {
     if (imgRef.current) {
@@ -49,6 +51,7 @@ const ContentDetails: React.FC = () => {
           uuid: uuidv4(),
         }))
         setMusicList(listIndex)
+        dispatch(setPlayListMusic(listIndex))
       }
     })
   }, [location.state.item.url_href])

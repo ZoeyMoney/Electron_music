@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import MusicTable from "@renderer/components/MusicTable";
 import { ContextMenuItem } from "@renderer/components/ContextMenuProvider";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@renderer/store/store";
 import { ModalState, MyLikeMusicList, SongProps } from "@renderer/InterFace";
 import { columns } from "@renderer/utils";
 import { getSearch } from "@renderer/Api";
 import { useLocation } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
+import { setPlayListMusic } from "@renderer/store/counterSlice";
 
 const SearchTable: React.FC = () => {
   const myLikeMusic = useSelector((state: RootState) => state.counter.myLikeMusic)
@@ -21,6 +22,7 @@ const SearchTable: React.FC = () => {
   const [query, setQuery] = useState(location.state?.query || '')
   const [currentPage, setCurrentPage] = useState(1) // 当前页数
   const [hasMore, setHasMore] = useState(true) // 是否还有更多数据可加载
+  const dispatch = useDispatch()
   // 右键菜单内容
   const menuItems: ContextMenuItem[] = [
     {
@@ -64,6 +66,7 @@ const SearchTable: React.FC = () => {
           uuid: uuidv4(),
         }))
         setMusicList(listIndex)
+        dispatch(setPlayListMusic(listIndex))
       }
       setLoading(false)
     })

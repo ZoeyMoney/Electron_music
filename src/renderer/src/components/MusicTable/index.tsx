@@ -1,7 +1,8 @@
-import { forwardRef, useImperativeHandle, useMemo } from 'react'
+import { forwardRef, useImperativeHandle, useMemo, useState } from "react";
 import ContextMenuProvider, { ContextMenuItem } from '@renderer/components/ContextMenuProvider'
 import {
-  addToast, Spinner,
+  addToast,
+  Spinner,
   Table,
   TableBody,
   TableCell,
@@ -12,13 +13,14 @@ import {
 import HskeletonCard from '@renderer/components/SkeletonCard/HskeletonCard'
 import LikeButton from '@renderer/components/LikeButton'
 import { useContextMenuTrigger } from '@renderer/components/ContextMenuProvider/useContextMenuTrigger'
-import { useDispatch } from 'react-redux'
-import { setMyLikeMusicList } from '@renderer/store/counterSlice'
-import { getMusicInfo } from "@renderer/Api";
-import { v4 as uuidv4 } from 'uuid'
+import { useDispatch, useSelector } from "react-redux";
+import { setMyLikeMusicList, setPlayInfo } from "@renderer/store/counterSlice";
 import { ModalWrapper } from '@renderer/components/ModalWrapper'
 import { MyLikeMusicList, SongProps, ModalState } from '@renderer/InterFace'
 import InfiniteScroll from "react-infinite-scroll-component";
+import { createSongInfo } from "@renderer/utils";
+import { RootState } from "@renderer/store/store";
+import { pauseAudio } from "@renderer/utils/audioConfig";
 
 interface MusicTableProps {
   menuItems: ContextMenuItem[] // 右键菜单
@@ -63,6 +65,8 @@ const MusicTable = forwardRef<MusicTableHandle, MusicTableProps>(
   ) => {
     const { handleContextMenu, hideAll } = useContextMenuTrigger()
     const dispatch = useDispatch()
+    const playInfo = useSelector((state: RootState) => state.counter.playInfo)
+    const [href, setHref] = useState('')
     // 检查歌曲是否已点赞
     const isLiked = useMemo(
       () =>
@@ -72,27 +76,6 @@ const MusicTable = forwardRef<MusicTableHandle, MusicTableProps>(
         },
       [myLikeMusic]
     )
-    // 构造歌曲信息
-    const createSongInfo = async (item: SongProps): Promise<SongProps | null> => {
-      try {
-        const res = await getMusicInfo({ href: item.href })
-        if (res.status === 200) {
-          return {
-            href: item.href,
-            music_title: item.music_title,
-            music_author: item.artist,
-            lrc: res.data.lrc,
-            pic: res.data.pic,
-            mp3_url: res.data.mp3_url,
-            uuid: uuidv4()
-          }
-        }
-        return null
-      } catch (error) {
-        console.error('获取歌曲信息失败:', error)
-        return null
-      }
-    }
     // 点赞和取消点赞
     const handleToggleLike = async (
       song: SongProps,
@@ -111,29 +94,56 @@ const MusicTable = forwardRef<MusicTableHandle, MusicTableProps>(
         )
       } else {
         // 添加到歌单
-        const musicInfo = await createSongInfo(song)
-        if (musicInfo) {
-          dispatch(
-            setMyLikeMusicList({
-              type: 'add',
-              id: groupId,
-              song: musicInfo
-            })
-          )
-        } else {
-          addToast({
-            title: '添加失败',
-            description: '无法获取歌曲信息，请稍后重试',
-            color: 'danger',
-            timeout: 3000
+        // const musicInfo = await createSongInfo(song)
+        dispatch(
+          setMyLikeMusicList({
+            type: 'add',
+            id: groupId,
+            song
           })
-        }
+        )
       }
     }
     // 用 useImperativeHandle 把 handleToggleLike 通过 ref 暴露出去
     useImperativeHandle(ref, () => ({
       handleToggleLike
     }))
+    //双击播放
+    const handleDoubleClick = async (song: SongProps): Promise<void> => {
+      setHref(song.href) //设置高亮的值
+      pauseAudio();
+      // 清空当前播放信息，进入 loading 状态
+      dispatch(
+        setPlayInfo({
+          ...playInfo,
+          loading: true,
+          href: '', // 清空 href，防止旧音频播放
+        })
+      );
+
+      try {
+        const res = await createSongInfo(song);
+        if (res?.status === 200 && res.data) {
+          dispatch(
+            setPlayInfo({
+              music_title: song.music_title,
+              artist: song.artist,
+              href: res.data.mp3_url, // ✅ 这里触发 useEffect，才播放
+              pic: res.data.pic,
+              lrc: res.data.lrc,
+              loading: false
+            })
+          );
+        } else {
+          dispatch(setPlayInfo({ ...playInfo, loading: false }));
+          addToast({ title: '获取歌曲信息失败', color: 'danger', timeout: 3000 });
+        }
+      } catch (error) {
+        console.error('获取歌曲失败：', error);
+        dispatch(setPlayInfo({ ...playInfo, loading: false }));
+        addToast({ title: '请求异常，请稍后再试', color: 'danger', timeout: 3000 });
+      }
+    }
     return (
       <div>
         <ModalWrapper
@@ -196,7 +206,12 @@ const MusicTable = forwardRef<MusicTableHandle, MusicTableProps>(
                   </TableRow>
                 ) : (
                   musicList.map((item) => (
-                    <TableRow key={item.href} onContextMenu={handleContextMenu(item)}>
+                    <TableRow
+                      key={item.href}
+                      onContextMenu={handleContextMenu(item)}
+                      onDoubleClick={() => handleDoubleClick(item)}
+                      className={item.href === href ? 'bg-danger-100' : ''} // 高亮当前播放歌曲
+                    >
                       <TableCell>{item.index}</TableCell>
                       <TableCell>
                         <div className={'w-[300px] overflow-hidden whitespace-nowrap'}>
