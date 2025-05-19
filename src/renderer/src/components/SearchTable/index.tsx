@@ -7,7 +7,6 @@ import { ModalState, MyLikeMusicList, SongProps } from "@renderer/InterFace";
 import { columns } from "@renderer/utils";
 import { getSearch } from "@renderer/Api";
 import { useLocation } from "react-router-dom";
-import { v4 as uuidv4 } from "uuid";
 import { setPlayListMusic } from "@renderer/store/counterSlice";
 
 const SearchTable: React.FC = () => {
@@ -63,7 +62,6 @@ const SearchTable: React.FC = () => {
         const listIndex = rawList.map((item: SongProps, index: number) => ({
           ...item,
           index: index + 1,
-          uuid: uuidv4(),
         }))
         setMusicList(listIndex)
         dispatch(setPlayListMusic(listIndex))
@@ -83,7 +81,6 @@ const SearchTable: React.FC = () => {
       const newList = rawList.map((item: SongProps, index: number) => ({
         ...item,
         index: musicList.length + index + 1,
-        uuid: uuidv4(),
       }))
       setMusicList((prev) => [...prev, ...newList])
       setCurrentPage(nextPage)

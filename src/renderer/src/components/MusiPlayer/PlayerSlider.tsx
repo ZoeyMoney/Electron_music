@@ -6,7 +6,7 @@ import { GrPowerCycle } from 'react-icons/gr'
 import { addToast, Slider } from "@heroui/react";
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from '@renderer/store/store'
-import { setAudioState } from '@renderer/store/counterSlice'
+import { setAudioState, setHistoryPlayList } from "@renderer/store/counterSlice";
 import {
   isPlayingAudio,
   pauseAudio,
@@ -14,6 +14,7 @@ import {
   setCurrentTimeAudio, setLoopAudio
 } from "@renderer/utils/audioConfig";
 import { FaPlay } from 'react-icons/fa'
+import { menuHandlerMap, useThrottleFn } from "@renderer/utils";
 
 const PlayerSlider: React.FC = () => {
   const classNameIcon = 'hover:text-gray-400'
@@ -21,7 +22,7 @@ const PlayerSlider: React.FC = () => {
   const nextPrive = 30
   const hasMounted = useRef(false) //是否每次启动项目都自动播放
   const dispatch = useDispatch()
-  const { audioState, playInfo } = useSelector((state: RootState) => state.counter)
+  const { audioState, playInfo, menuDataType } = useSelector((state: RootState) => state.counter)
   useEffect(() => {
     if (!hasMounted.current) {
       hasMounted.current = true
@@ -32,11 +33,12 @@ const PlayerSlider: React.FC = () => {
       // 暂停之前的音频（避免多个同时播放）
       pauseAudio();
       playAudio(playInfo.href, 0)
+      dispatch(setHistoryPlayList(playInfo))
     }
   }, [playInfo.href])
   //监听播放结束回调
   registerOnEnded(() => {
-
+    (menuHandlerMap[menuDataType] || menuHandlerMap['default'])(playInfo.id)
     // console.log('currentPlaylistType:', currentPlaylistType);
     console.log('播放完了，下一首');
   })
@@ -63,6 +65,16 @@ const PlayerSlider: React.FC = () => {
     const s = Math.floor(seconds % 60)
     return `${m}:${s.toString().padStart(2, '0')}`
   }
+  //下一首 点击后间隔3秒执行一次
+  const handleSkipClick = useThrottleFn((direction: 'next' | 'prev') => {
+    console.log('点击方向:', direction)
+
+    if (isPlayingAudio()) {
+      pauseAudio()
+    }
+
+    ;(menuHandlerMap[menuDataType] || menuHandlerMap['default'])(playInfo.id, direction)
+  }, 3000) // 节流间隔3秒
   return (
     <div className="flex flex-col justify-evenly py-[9px]">
       <div
@@ -84,7 +96,7 @@ const PlayerSlider: React.FC = () => {
           />
         </div>
         <div className="cursor-pointer">
-          <MdSkipPrevious size={nextPrive} className={classNameIcon} />
+          <MdSkipPrevious size={nextPrive} className={classNameIcon} onClick={() => handleSkipClick('prev')} />
         </div>
         <div className="cursor-pointer" onClick={handlePlayPause}>
           {audioState.isPlaying ? (
@@ -94,7 +106,7 @@ const PlayerSlider: React.FC = () => {
           )}
         </div>
         <div className="cursor-pointer">
-          <MdSkipNext size={nextPrive} className={classNameIcon} />
+          <MdSkipNext size={nextPrive} className={classNameIcon} onClick={() => handleSkipClick('next')} />
         </div>
         <div className="cursor-pointer">
           <GrPowerCycle

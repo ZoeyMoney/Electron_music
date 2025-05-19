@@ -38,10 +38,6 @@ const PlayerTitle: React.FC = () => {
     const scrollTop = currentIndex * LINE_HEIGHT - (container.clientHeight / 2 - LINE_HEIGHT / 2)
     container.scrollTo({ top: scrollTop, behavior: 'smooth' })
   }, [currentIndex])
-
-  useEffect(() => {
-    console.log('歌曲标题信息：', playInfo)
-  }, [playInfo])
   // 抽屉点击事件
   const handleDrawerClick = (): void => {
     if (isOpen) {
@@ -93,24 +89,30 @@ const PlayerTitle: React.FC = () => {
                         }}
                       >
                         {/* 全部歌词 */}
-                        {lyrics.map((line, i) => {
-                          const isCurrent = i === currentIndex
-                          return (
-                            <p
-                              key={i}
-                              style={{
-                                height: LINE_HEIGHT,
-                                margin: 0,
-                                color: isCurrent ? 'red' : '#aaa',
-                                fontWeight: isCurrent ? 'bold' : 'normal',
-                                fontSize: isCurrent ? 18 : 16,
-                                transition: 'color 0.3s, font-size 0.3s'
-                              }}
-                            >
-                              {line.text}
-                            </p>
-                          )
-                        })}
+                        {lyrics.length === 0 ? (
+                          <p style={{ height: LINE_HEIGHT, margin: 0, color: '#aaa' }}>无歌词</p>
+                        ) : (
+                          lyrics.map((line, i) => {
+                            const isCurrent = i === currentIndex
+                            const displayText = line.text && line.text.trim() !== '' ? line.text : '无歌词'
+
+                            return (
+                              <p
+                                key={i}
+                                style={{
+                                  height: LINE_HEIGHT,
+                                  margin: 0,
+                                  color: isCurrent ? 'red' : '#aaa',
+                                  fontWeight: isCurrent ? 'bold' : 'normal',
+                                  fontSize: isCurrent ? 18 : 16,
+                                  transition: 'color 0.3s, font-size 0.3s'
+                                }}
+                              >
+                                {displayText}
+                              </p>
+                            )
+                          })
+                        )}
                       </div>
                     </div>
                   </div>

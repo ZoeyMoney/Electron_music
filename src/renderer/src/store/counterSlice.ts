@@ -12,6 +12,7 @@ const initialState: RootState = {
   ],
   //播放清单 - 歌单
   playListMusic: [],
+  menuDataType: 'playListMusicType',
   // 播放器状态
   audioState: {
     volume: 100, // 音量0-100 默认50
@@ -22,6 +23,7 @@ const initialState: RootState = {
     duration: 0, //总时长
     isPlaying: false, // 播放状态
   },
+  historyPlayList: [], //历史播放
   //播放信息
   playInfo: {
     loading: false,
@@ -30,6 +32,7 @@ const initialState: RootState = {
     href: '',
     pic: '',
     lrc: '无歌词',
+    id: '',
   },
 }
 
@@ -86,6 +89,14 @@ export const counterSlice = createSlice({
     setAudioState: (state, action: PayloadAction<Partial<PlayerState>>) => {
       Object.assign(state.audioState, action.payload)
     },
+    // 添加历史播放
+    setHistoryPlayList: (state, action: PayloadAction<any>) => {
+      //获取的数据  放到 historyPlayList
+      if (!state.historyPlayList) {
+        state.historyPlayList = []
+      }
+      state.historyPlayList.push(action.payload)
+    },
   }
 });
 
@@ -96,5 +107,6 @@ export const {
   setAudioState, //  控制播放
   setPlayInfo, //  保存播放信息
   setPlayListMusic, //  保存播放清单
+  setHistoryPlayList, //  添加历史播放
 } = counterSlice.actions;
 export default counterSlice.reducer;

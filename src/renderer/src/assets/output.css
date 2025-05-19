@@ -1098,16 +1098,12 @@ video {
   margin-top: 20px;
 }
 
-.mt-\[40px\] {
-  margin-top: 40px;
-}
-
-.mt-\[50px\] {
-  margin-top: 50px;
-}
-
 .mt-\[23px\] {
   margin-top: 23px;
+}
+
+.mt-\[40px\] {
+  margin-top: 40px;
 }
 
 .box-border {
@@ -1387,14 +1383,6 @@ video {
   max-height: 100%;
 }
 
-.max-h-\[100px\] {
-  max-height: 100px;
-}
-
-.max-h-\[300px\] {
-  max-height: 300px;
-}
-
 .min-h-10 {
   min-height: 2.5rem;
 }
@@ -1629,10 +1617,6 @@ video {
   width: 100vw;
 }
 
-.w-\[800px\] {
-  width: 800px;
-}
-
 .min-w-10 {
   min-width: 2.5rem;
 }
@@ -1782,10 +1766,6 @@ video {
 
 .max-w-xs {
   max-width: 20rem;
-}
-
-.max-w-\[400px\] {
-  max-width: 400px;
 }
 
 .flex-1 {
@@ -2499,14 +2479,6 @@ video {
 
 .rounded-small {
   border-radius: var(--heroui-radius-small);
-}
-
-.rounded-3xl {
-  border-radius: 1.5rem;
-}
-
-.rounded-\[50px\] {
-  border-radius: 50px;
 }
 
 .\!rounded-e-none {
@@ -3558,11 +3530,6 @@ video {
   line-height: 1.75rem;
 }
 
-.text-base {
-  font-size: 1rem;
-  line-height: 1.5rem;
-}
-
 .font-extralight {
   font-weight: 200;
 }
@@ -3577,10 +3544,6 @@ video {
 
 .font-semibold {
   font-weight: 600;
-}
-
-.font-bold {
-  font-weight: 700;
 }
 
 .tabular-nums {
@@ -3608,6 +3571,11 @@ video {
 .\!text-danger {
   --tw-text-opacity: 1 !important;
   color: hsl(var(--heroui-danger) / var(--heroui-danger-opacity, var(--tw-text-opacity))) !important;
+}
+
+.text-\[\#00c700\] {
+  --tw-text-opacity: 1;
+  color: rgb(0 199 0 / var(--tw-text-opacity, 1));
 }
 
 .text-\[\#7a7a7a\] {
@@ -3889,21 +3857,6 @@ video {
 .text-white {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
-}
-
-.text-gray-700 {
-  --tw-text-opacity: 1;
-  color: rgb(55 65 81 / var(--tw-text-opacity, 1));
-}
-
-.text-red-500 {
-  --tw-text-opacity: 1;
-  color: rgb(239 68 68 / var(--tw-text-opacity, 1));
-}
-
-.text-\[\#00c700\] {
-  --tw-text-opacity: 1;
-  color: rgb(0 199 0 / var(--tw-text-opacity, 1));
 }
 
 .underline {
@@ -4317,10 +4270,6 @@ video {
 
 .duration-200 {
   transition-duration: 200ms;
-}
-
-.duration-300 {
-  transition-duration: 300ms;
 }
 
 .\!ease-out {

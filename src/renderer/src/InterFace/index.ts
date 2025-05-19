@@ -28,6 +28,7 @@ export interface SongProps {
   lrc?: string
   pic?: string
   mp3_url?: string
+  id?: string
 }
 export interface MyLikeMusicList {
   id: number | string
@@ -48,6 +49,10 @@ export interface RootState {
   audioState: PlayerState
   playInfo: PlayInfo
   playListMusic: PlayListProps[]
+  //歌单类型  搜索推荐  本地    收藏   或者  自定义
+  menuDataType: 'playListMusicType' | 'allMusicList' | 'localMusicList' | string | '1'
+  //历史播放
+  historyPlayList: SongProps[]
 }
 
 //播放歌单
@@ -55,6 +60,7 @@ export interface PlayListProps {
   artist: string
   href: string
   music_title: string
+  id: string
 }
 
 // 播放器状态
@@ -76,4 +82,5 @@ export interface PlayInfo {
   pic: string
   lrc: string
   loading: boolean
+  id: string
 }

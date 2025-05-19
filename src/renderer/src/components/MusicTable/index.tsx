@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useMemo, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import ContextMenuProvider, { ContextMenuItem } from '@renderer/components/ContextMenuProvider'
 import {
   addToast,
@@ -66,7 +66,11 @@ const MusicTable = forwardRef<MusicTableHandle, MusicTableProps>(
     const { handleContextMenu, hideAll } = useContextMenuTrigger()
     const dispatch = useDispatch()
     const playInfo = useSelector((state: RootState) => state.counter.playInfo)
-    const [href, setHref] = useState('')
+    const [linId, setLinId] = useState('')
+    // 自动更新href
+    useEffect(() => {
+      setLinId(playInfo.id)
+    }, [playInfo.id])
     // 检查歌曲是否已点赞
     const isLiked = useMemo(
       () =>
@@ -110,7 +114,8 @@ const MusicTable = forwardRef<MusicTableHandle, MusicTableProps>(
     }))
     //双击播放
     const handleDoubleClick = async (song: SongProps): Promise<void> => {
-      setHref(song.href) //设置高亮的值
+      console.log('handleDoubleClick', song);
+      setLinId(song.id ?? '') //设置高亮的值
       pauseAudio();
       // 清空当前播放信息，进入 loading 状态
       dispatch(
@@ -124,6 +129,7 @@ const MusicTable = forwardRef<MusicTableHandle, MusicTableProps>(
       try {
         const res = await createSongInfo(song);
         if (res?.status === 200 && res.data) {
+          console.log('res.data', song);
           dispatch(
             setPlayInfo({
               music_title: song.music_title,
@@ -131,7 +137,8 @@ const MusicTable = forwardRef<MusicTableHandle, MusicTableProps>(
               href: res.data.mp3_url, // ✅ 这里触发 useEffect，才播放
               pic: res.data.pic,
               lrc: res.data.lrc,
-              loading: false
+              loading: false,
+              id: song.id
             })
           );
         } else {
@@ -210,7 +217,7 @@ const MusicTable = forwardRef<MusicTableHandle, MusicTableProps>(
                       key={item.href}
                       onContextMenu={handleContextMenu(item)}
                       onDoubleClick={() => handleDoubleClick(item)}
-                      className={item.href === href ? 'bg-danger-100' : ''} // 高亮当前播放歌曲
+                      className={item.id === linId ? 'bg-danger-100' : ''} // 高亮当前播放歌曲
                     >
                       <TableCell>{item.index}</TableCell>
                       <TableCell>
