@@ -94,7 +94,7 @@ const PlayerTitle: React.FC = () => {
                         ) : (
                           lyrics.map((line, i) => {
                             const isCurrent = i === currentIndex
-                            const displayText = line.text && line.text.trim() !== '' ? line.text : '无歌词'
+                            const displayText = (line.text ?? '').trim() || '无歌词'
 
                             return (
                               <p
@@ -160,7 +160,7 @@ const PlayerTitle: React.FC = () => {
             </div>
           </div>
           <div className={'px-3 flex flex-col justify-evenly h-[80px]'}>
-            <h1 className={'text-[14px] w-[150px] overflow-hidden text-ellipsis'}>
+            <h1 className={'text-[14px] w-[150px] overflow-hidden text-ellipsis whitespace-nowrap'}>
               {playInfo.music_title}
             </h1>
             <h1 className={'text-[12px] text-[#b3b3b3]'}>{playInfo.artist}</h1>

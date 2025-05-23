@@ -14,7 +14,7 @@ import HskeletonCard from '@renderer/components/SkeletonCard/HskeletonCard'
 import LikeButton from '@renderer/components/LikeButton'
 import { useContextMenuTrigger } from '@renderer/components/ContextMenuProvider/useContextMenuTrigger'
 import { useDispatch, useSelector } from "react-redux";
-import { setMyLikeMusicList, setPlayInfo } from "@renderer/store/counterSlice";
+import { setMenuDataType, setMyLikeMusicList, setPlayInfo } from '@renderer/store/counterSlice'
 import { ModalWrapper } from '@renderer/components/ModalWrapper'
 import { MyLikeMusicList, SongProps, ModalState } from '@renderer/InterFace'
 import InfiniteScroll from "react-infinite-scroll-component";
@@ -114,7 +114,6 @@ const MusicTable = forwardRef<MusicTableHandle, MusicTableProps>(
     }))
     //双击播放
     const handleDoubleClick = async (song: SongProps): Promise<void> => {
-      console.log('handleDoubleClick', song);
       setLinId(song.id ?? '') //设置高亮的值
       pauseAudio();
       // 清空当前播放信息，进入 loading 状态
@@ -141,6 +140,7 @@ const MusicTable = forwardRef<MusicTableHandle, MusicTableProps>(
               id: song.id
             })
           );
+          dispatch(setMenuDataType('playListMusicType'))
         } else {
           dispatch(setPlayInfo({ ...playInfo, loading: false }));
           addToast({ title: '获取歌曲信息失败', color: 'danger', timeout: 3000 });

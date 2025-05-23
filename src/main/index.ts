@@ -1,7 +1,10 @@
-import { app, shell, BrowserWindow, ipcMain, screen } from "electron";
+import { app, shell, BrowserWindow, ipcMain, screen, dialog } from "electron";
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { parseFile } from 'music-metadata'
+import fs from 'fs'
+import path from 'node:path'
 
 let mainWindow: BrowserWindow | null = null
 function createWindow(): void {
@@ -88,4 +91,56 @@ ipcMain.on('quit-app', () => app.quit())
 ipcMain.on('minimize-app', (event) => {
   const window = BrowserWindow.fromWebContents(event.sender);
   window?.minimize();
+});
+
+// 选择文件夹
+ipcMain.handle('select-music-file', async () => {
+  const result = await dialog.showOpenDialog({
+    title: '选择音乐文件',
+    properties: ['openDirectory'],
+    buttonLabel: '选择此文件夹'
+  })
+  if (result.canceled) {
+    return null
+  }
+  const folderPath = result.filePaths[0];
+
+  // 遍历文件夹
+  function traverseFolder(dirPath: string): string[] | null {
+    try {
+      let files: string[] = [];
+      const items = fs.readdirSync(dirPath);
+
+      for (const item of items) {
+        const fullPath = path.join(dirPath, item);
+        const stat = fs.statSync(fullPath);
+
+        if (stat.isDirectory()) {
+          files = files.concat(traverseFolder(fullPath) || []); // 遇到 null 用空数组代替
+        } else {
+          files.push(fullPath);
+        }
+      }
+
+      return files;
+    } catch (error) {
+      console.error('读取文件夹出错:', error);
+      return null;
+    }
+  }
+
+  const allFiles = traverseFolder(folderPath);
+  return allFiles;
+})
+
+// 监听渲染进程的请求，读取音频文件
+ipcMain.handle('get-audio-duration', async (_, filePath) => {
+  try {
+    const metadata = await parseFile(filePath);
+    const duration = metadata.format.duration || 0;
+    return duration; // 返回时长（单位：秒）
+  } catch (error) {
+    console.error('获取音频时长失败:', error);
+    return 0;
+  }
 });

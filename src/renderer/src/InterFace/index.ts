@@ -15,6 +15,7 @@ export interface ViewMoreProps {
   url_href: string
   name: string
   pic: string
+  id?: string
 }
 
 //仓库
@@ -34,6 +35,7 @@ export interface MyLikeMusicList {
   id: number | string
   name: string
   index?: number
+  key: string
   songs: SongProps[]
 }
 
@@ -53,6 +55,10 @@ export interface RootState {
   menuDataType: 'playListMusicType' | 'allMusicList' | 'localMusicList' | string | '1'
   //历史播放
   historyPlayList: SongProps[]
+  //本地音乐
+  localMusicList: LocalMusicInfo[]
+  //排序问题
+  sort: 'asc' | 'desc'
 }
 
 //播放歌单
@@ -79,8 +85,23 @@ export interface PlayInfo {
   music_title: string
   artist: string
   href: string
-  pic: string
+  pic?: string
   lrc: string
-  loading: boolean
+  loading?: boolean
   id: string
+}
+//本地音乐
+export interface LocalMusicInfo extends PlayInfo {
+  date: string
+  duration: string
+  localPath: boolean
+}
+
+//设置页
+export interface SettingDataProps {
+  title: string
+  data: {
+    label: string
+    component: JSX.Element
+  }[]
 }

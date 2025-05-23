@@ -41,6 +41,7 @@ const ContentDetails: React.FC = () => {
 
   // 获取歌单数据
   useEffect(() => {
+    console.log('ContentDetails', location.state.item.url_href);
     getPlayListDetail({ url: location.state.item.url_href }).then((res) => {
       if (res.status === 200) {
         setLoading(false)

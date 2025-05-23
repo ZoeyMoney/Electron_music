@@ -1,9 +1,22 @@
 import ColorThief from 'colorthief'
-import { PlayListProps, SongProps } from '@renderer/InterFace'
+import { LocalMusicInfo, MyLikeMusicList, PlayListProps, SongProps } from '@renderer/InterFace'
 import { getMusicInfo } from '@renderer/Api'
 import { store } from '@renderer/store/store'
 import { setPlayInfo } from "@renderer/store/counterSlice";
 import { useRef } from "react";
+import { v4 as uuidv4 } from 'uuid'
+import { addToast } from '@heroui/react'
+import li from '@renderer/assets/image/Library-1.jpg'
+
+//格式化日期 年月日
+export const formatDate = (date: string | Date): string => {
+  const dates = new Date(date)
+  return dates.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+}
 
 //rgb 转hex
 const rgbToHex = (r: number, g: number, b: number): string => {
@@ -84,24 +97,58 @@ export const useThrottleFn = (fn: (...args: any[]) => void, delay = 3000) => {
   }
 }
 
+// 格式化音乐时间
+export const formatTime = (seconds: number): string => {
+  if (!seconds || isNaN(seconds)) return '0:00'
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
 //获取redux中的playListMusic歌单信息
 const getPlayListMusic = (): PlayListProps[] => store.getState().counter.playListMusic
+//获取本地音乐列表
+const getLocalMusicList = (): LocalMusicInfo[] => store.getState().counter.localMusicList
+//自建歌单
+const getSelfPlayList = (): MyLikeMusicList[] => store.getState().counter.myLikeMusic
+//获取播放列表
+const getMenuDataType = (): string => store.getState().counter.menuDataType
 // 获取是否随机播放
 const getRandomPlay = (): boolean => store.getState().counter.audioState.random
 // 辅助：根据歌曲请求歌曲信息，并派发redux更新
-const fetchAndDispatchPlayInfo = async (song: SongProps): Promise<void> => {
-  const res = await createSongInfo(song)
-  store.dispatch(
-    setPlayInfo({
-      music_title: song.music_title,
-      artist: song.artist,
-      href: res.data.mp3_url,
-      pic: res.data.pic,
-      lrc: res.data.lrc,
-      loading: false,
-      id: song.id
-    })
-  )
+const fetchAndDispatchPlayInfo = async (song: SongProps & { localPath?: boolean }): Promise<void> => {
+  if (song.localPath === true) {
+    // 本地音乐，不请求接口，直接用传进来的信息
+    store.dispatch(
+      setPlayInfo({
+        music_title: song.music_title,
+        artist: song.artist,
+        href: song.href, // 本地路径
+        pic: song.pic || '',
+        lrc: song.lrc || '无歌词',
+        loading: false,
+        id: song.id,
+      })
+    )
+  } else {
+    // 网络音乐，调用接口请求详细信息
+    try {
+      const res = await createSongInfo(song)
+      store.dispatch(
+        setPlayInfo({
+          music_title: song.music_title,
+          artist: song.artist,
+          href: res.data.mp3_url,
+          pic: res.data.pic,
+          lrc: res.data.lrc || '无歌词',
+          loading: false,
+          id: song.id,
+        })
+      )
+    } catch (err) {
+      console.error('请求网络音乐信息失败:', err)
+    }
+  }
 }
 
 // 播放下一首歌
@@ -148,7 +195,6 @@ export const playPrevSong = async (): Promise<void> => {
   const historyPlayList = store.getState().counter.historyPlayList
   if (historyPlayList.length > 1) {
     const prevSong = historyPlayList[historyPlayList.length - 2]
-    console.log(prevSong);
     store.dispatch(
       setPlayInfo({
         music_title: prevSong.music_title,
@@ -168,6 +214,7 @@ export const playPrevSong = async (): Promise<void> => {
 //播放清单类型
 export const menuHandlerMap: Record<string, (id: string, direction?: 'next' | 'prev') => void> = {
   playListMusicType: async (id: string, direction = 'next') => {
+    // 播放清单
     const list = getPlayListMusic()
     if (direction === 'prev') {
       await playPrevSong()
@@ -175,20 +222,133 @@ export const menuHandlerMap: Record<string, (id: string, direction?: 'next' | 'p
       await playNextSong(list, id)
     }
   },
-  allMusicList: () => {
+  allMusicList: async (id: string, direction = 'next') => {
+    const localMusic = getLocalMusicList()
+    const getLikeSongs = getSelfPlayList()
     // 全部音乐 本地+自建歌单
-    console.log('all')
+    const allSongs = [
+      ...localMusic,
+      ...getLikeSongs.flatMap((item) => item.songs),
+    ]
+    if (direction === 'prev') {
+      await playPrevSong()
+    } else {
+      await playNextSong(allSongs, id)
+    }
   },
-  localMusicList: () => {
+  localMusicList: async (id: string, direction = 'next') => {
+    console.log(id,'id')
     // 本地音乐
-    console.log('local')
+    const list = getLocalMusicList()
+    if (direction === 'prev') {
+      await playPrevSong()
+    } else {
+      await playNextSong(list, id)
+    }
   },
-  '1': () => {
+  '1': async (id: string, direction = 'next') => {
     // 我喜欢列表
-    console.log('mylist')
+    const getLikeSongs = getSelfPlayList()
+    if (direction === 'prev') {
+      await playPrevSong()
+    } else {
+      await playNextSong(getLikeSongs[0].songs, id)
+    }
   },
-  default: () => {
-    // 默认处理  自建歌单里面的列表
-    console.log('其他：')
+  default: async (id: string, direction = 'next') => {
+    // 我喜欢列表
+    const playLists = getSelfPlayList()
+    const menuDataType = getMenuDataType()
+    //根据id匹配播放列表
+    const targetList = playLists.find((item) => String(item.id) === String(menuDataType))
+    console.log(targetList)
+    if (!targetList) {
+      console.warn(`找不到 id 为 ${id} 的歌单`)
+      return
+    }
+
+    if (direction === 'prev') {
+      await playPrevSong()
+    } else {
+      await playNextSong(targetList.songs, id)
+    }
   }
 }
+
+//本地歌曲 下载歌曲 正在下载
+export const LocalAndDownloadList = [
+  {
+    key: 'LocalMusic',
+    title: '本地歌曲',
+  },
+  {
+    key: 'DownloadMusic',
+    title: '下载歌曲'
+  }
+]
+
+//本地音乐
+export const handleAddMusic = async (): Promise<LocalMusicInfo[] | void> => {
+  try {
+    const result = await window.api.selectMusicFolder();
+    if (!Array.isArray(result)) {
+      console.error('返回的不是数组:', result);
+      return;
+    }
+
+    const musicData: LocalMusicInfo[] = await Promise.all(
+      result.map(async (path: string) => {
+        //日期
+        const now = new Date()
+          .toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          })
+          .replace(/\//g, '-')
+        const fileName = path.split('\\').pop()?.replace('.mp3', '') || '未知标题';
+        const fileNameParts = fileName.split(' - ');
+
+        let music_title: string;
+        let artist: string;
+
+        if (fileNameParts.length > 1) {
+          music_title = fileNameParts[1] || '未知标题';
+          artist = fileNameParts[0] || '未知歌手';
+        } else {
+          music_title = fileName || '未知标题';
+          artist = '未知歌手';
+        }
+
+        const durationInSeconds = await window.api.getAudioDuration(path);
+        const formattedDuration = formatTime(durationInSeconds);
+
+        return {
+          id: uuidv4(),
+          music_title,
+          artist: artist,
+          date: now,
+          duration: formattedDuration,
+          href: path,
+          pic: li,
+          lrc: '无歌词',
+          localPath: true, //是否是本地音乐  true 是 false否
+        };
+      })
+    );
+
+    console.log('musicData:', musicData);
+
+    return musicData; // 返回给调用者控制是否 dispatch
+  } catch (error) {
+    console.error('打开文件夹失败:', error);
+    addToast({
+      title: '只允许添加文件夹',
+      timeout: 2000,
+      color: 'danger'
+    });
+  }
+};

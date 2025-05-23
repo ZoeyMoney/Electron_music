@@ -53,7 +53,7 @@ const LeftMenu: React.FC = () => {
           label: '本地与下载',
           name: 'LocalMusic'
         },
-        { icon: <BiSolidTimeFive className={iconClasses} />, label: '最近播放', name: 'historyMusic' },
+        { icon: <BiSolidTimeFive className={iconClasses} />, label: '最近播放', name: 'HistoryMusic' },
         { icon: <FaMusic className={iconClasses} />, label: '全部音乐', name: 'AllMusic' }
       ]
     }
@@ -70,6 +70,10 @@ const LeftMenu: React.FC = () => {
   //每个页面跳转
   const menuClick = (key: string | number): void => {
     navigate(`/${key}`)
+  }
+  //自建歌单跳转
+  const menuClickInfo = (item): void => {
+    navigate(`/MyLikeMusic`, { state: { item: item } })
   }
   // 关闭删除模态框
   const MusicHandleClose = (): void => setMusicOpen(false)
@@ -97,6 +101,7 @@ const LeftMenu: React.FC = () => {
       const newPlaylist = {
         id: uuidv4(), // 使用时间戳作为歌单 ID
         name: playlistName,
+        key: 'MyLike-' + uuidv4(),
         songs: [],
       };
 
@@ -151,10 +156,11 @@ const LeftMenu: React.FC = () => {
           variant="flat"
           color={'default'}
           aria-label="Listbox menu with icons"
-          onAction={(key) => menuClick(key)}
+          onAction={(item) => menuClick(item)}
         >
           {myLikeMusic.map((item) => (
             <ListboxItem
+              onPress={() => menuClickInfo(item)}
               key={item.id}
               startContent={<LikeFill className={`${iconClasses} w-[18px] !text-[#ff3144]`} />}
               style={{ fontSize: '15px' }}

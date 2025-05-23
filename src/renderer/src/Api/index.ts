@@ -67,3 +67,25 @@ export const getSearch = (params?: { query?: string, page?: number }): Promise<A
     params
   })
 }
+
+/*乐库 13首 音乐*/
+export const getMusicLibrary = (): Promise<AxiosResponse> => {
+  return request({
+    url: '/api/yk_dj',
+    method: 'get'
+  })
+}
+/*乐库*/
+export const getMusicLibraryList = (): Promise<AxiosResponse> => {
+  return request({
+    url: '/api/gd',
+    method: 'get'
+  })
+}
+/*乐库 swiper*/
+export const getMusicLibraryListSwiper = (): Promise<AxiosResponse> => {
+  return request({
+    url: '/api/yk_swiper',
+    method: 'get'
+  })
+}

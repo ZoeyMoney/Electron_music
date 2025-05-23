@@ -21,6 +21,35 @@
     "build:linux": "electron-vite build && electron-builder --linux",
     "wincss:watch": "npx tailwindcss -i ./src/renderer/src/assets/main.css -o ./src/renderer/src/assets/output.css --watch"
   },
+  "build": {
+    "appId": "com.example.musicplayer",
+    "productName": "聆听音乐",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "resources/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "聆听音乐"
+    },
+    "files": [
+      "out/**/*"
+    ]
+  },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
@@ -32,6 +61,7 @@
     "framer-motion": "^12.5.0",
     "history": "^5.3.0",
     "lottie-react": "^2.4.1",
+    "music-metadata": "^7.14.0",
     "next-themes": "^0.4.6",
     "react-contexify": "^6.0.0",
     "react-icons": "^5.5.0",
@@ -42,6 +72,7 @@
     "redux-persist": "^6.0.0",
     "reset-css": "^5.0.2",
     "swiper": "^11.2.6",
+    "swr": "^2.3.3",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

@@ -14,7 +14,7 @@ import {
   setCurrentTimeAudio, setLoopAudio
 } from "@renderer/utils/audioConfig";
 import { FaPlay } from 'react-icons/fa'
-import { menuHandlerMap, useThrottleFn } from "@renderer/utils";
+import { formatTime, menuHandlerMap, useThrottleFn } from "@renderer/utils";
 
 const PlayerSlider: React.FC = () => {
   const classNameIcon = 'hover:text-gray-400'
@@ -58,13 +58,7 @@ const PlayerSlider: React.FC = () => {
       playAudio(playInfo.href, undefined)
     }
   }
-  // 格式化时间
-  const formatTime = (seconds: number): string => {
-    if (!seconds || isNaN(seconds)) return '0:00'
-    const m = Math.floor(seconds / 60)
-    const s = Math.floor(seconds % 60)
-    return `${m}:${s.toString().padStart(2, '0')}`
-  }
+
   //下一首 点击后间隔3秒执行一次
   const handleSkipClick = useThrottleFn((direction: 'next' | 'prev') => {
     console.log('点击方向:', direction)

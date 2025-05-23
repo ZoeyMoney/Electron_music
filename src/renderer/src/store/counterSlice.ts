@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { PlayerState, RootState } from "@renderer/InterFace";
+import { LocalMusicInfo, PlayerState, RootState } from '@renderer/InterFace'
 
 const initialState: RootState = {
   //自建歌单
@@ -7,8 +7,9 @@ const initialState: RootState = {
     {
       id: 1,
       name: '我喜欢',
+      key: 'MyLike',
       songs: [],
-    },
+    }
   ],
   //播放清单 - 歌单
   playListMusic: [],
@@ -23,6 +24,7 @@ const initialState: RootState = {
     duration: 0, //总时长
     isPlaying: false, // 播放状态
   },
+  localMusicList: [], //本地音乐
   historyPlayList: [], //历史播放
   //播放信息
   playInfo: {
@@ -34,6 +36,7 @@ const initialState: RootState = {
     lrc: '无歌词',
     id: '',
   },
+  sort: 'asc'
 }
 
 export const counterSlice = createSlice({
@@ -97,6 +100,29 @@ export const counterSlice = createSlice({
       }
       state.historyPlayList.push(action.payload)
     },
+    //添加本地歌曲
+    setMusicLocalDataList: (state, action: PayloadAction<LocalMusicInfo[]>) => {
+      if (!Array.isArray(state.localMusicList)) {
+        console.warn('state.MusicDataList is not an array, resetting to empty array');
+        state.localMusicList = [];
+      }
+      state.localMusicList = [...state.localMusicList, ...action.payload];
+    },
+    //删除本地歌曲
+    removeMusicLocalDataList: (state, action: PayloadAction<string>) => {
+      state.localMusicList = state.localMusicList.filter(
+        (item) => !action.payload.includes(item.id)
+      );
+    },
+    //更改播放类型
+    setMenuDataType: (state, action: PayloadAction<any>) => {
+      console.log(state.menuDataType,action.payload,'sta')
+      state.menuDataType = action.payload
+    },
+    //更改排序问题
+    setSort: (state, action: PayloadAction<any>) => {
+      state.sort = action.payload
+    }
   }
 });
 
@@ -108,5 +134,9 @@ export const {
   setPlayInfo, //  保存播放信息
   setPlayListMusic, //  保存播放清单
   setHistoryPlayList, //  添加历史播放
+  setMusicLocalDataList, //添加本地音乐
+  removeMusicLocalDataList, // 删除本地音乐
+  setMenuDataType, // 更改播放类型
+  setSort, //  更改排序问题
 } = counterSlice.actions;
 export default counterSlice.reducer;

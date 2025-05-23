@@ -6,10 +6,11 @@ interface ModalWrapperProps {
   children: React.ReactNode
   isOpen: boolean
   onClose: () => void
-  onAction?: () => void
-  actionText?: string
+  onAction?: () => void // 添加一个可选的 onAction 属性
+  actionText?: string | null
   buttonSize?: 'sm' | 'md' | 'lg'
-  buttonCloseText?: string   //关闭按钮
+  buttonCloseText?: string //关闭按钮
+  modalSize?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full'
 }
 
 export const ModalWrapper: React.FC<ModalWrapperProps> = ({
@@ -18,9 +19,10 @@ export const ModalWrapper: React.FC<ModalWrapperProps> = ({
   isOpen,
   onClose,
   onAction,
-  actionText = '确认',
+  actionText,
   buttonSize = 'sm',
-  buttonCloseText = '关闭'
+  buttonCloseText = '关闭',
+  modalSize
 }) => {
   return (
     <Modal
@@ -29,6 +31,7 @@ export const ModalWrapper: React.FC<ModalWrapperProps> = ({
       isDismissable={false}
       isKeyboardDismissDisabled={false}
       backdrop={'blur'}
+      size={modalSize}
     >
       <ModalContent>
         {(closeModal) => (
@@ -39,7 +42,7 @@ export const ModalWrapper: React.FC<ModalWrapperProps> = ({
               <Button color="danger" variant="light" onPress={closeModal} size={buttonSize}>
                 {buttonCloseText}
               </Button>
-              {onAction && (
+              {onAction && !!actionText && (
                 <Button
                   color="primary"
                   size={buttonSize}

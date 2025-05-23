@@ -11,3 +11,11 @@ declare module 'redux-persist/integration/react' {
 
   export class PersistGate extends React.Component<PersistGateProps> {}
 }
+
+declare global {
+  interface Window {
+    api: {
+      [key: string]: any;
+    };
+  }
+}
