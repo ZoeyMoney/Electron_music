@@ -32,7 +32,7 @@ interface MusicTableProps {
   loading: boolean // 是否加载中
   musicList: SongProps[] // 歌曲列表
   myLikeMusic: MyLikeMusicList[] // 我的喜欢列表
-  modalState: ModalState
+  modalState: ModalState //  模态框状态
   onModalClose: () => void // 关闭模态框
   fetchMoreData?: () => Promise<void> // 加载更多数据
   hasMore?: boolean // 是否有更多数据
@@ -84,7 +84,7 @@ const MusicTable = forwardRef<MusicTableHandle, MusicTableProps>(
     const handleToggleLike = async (
       song: SongProps,
       groupId: string | number = 1,
-      forceAdd: boolean = false
+      forceAdd: boolean = false // 强制添加
     ): Promise<void> => {
       const alreadyLiked = isLiked(song.href)
       if (alreadyLiked && !forceAdd) {

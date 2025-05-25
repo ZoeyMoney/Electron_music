@@ -8,9 +8,12 @@ import ContentDetails from '@renderer/components/ContentDetails' //电台音乐�
 import LocalMusic from '@renderer/view/LocalMusic'
 import HistoryMusic from '@renderer/view/HistoryMusic'
 import AllMusic from '@renderer/view/AllMusic'
-import SearchTable from '@renderer/components/SearchTable'
+// import SearchTable from '@renderer/components/SearchTable'
 import ViewMore from '@renderer/components/ViewMore' //显示更多
 import MyLikeMusic from '@renderer/view/MyLikeMusic' //自建歌单
+
+
+import InterMusicTable from '@renderer/components/InterMusicTable'
 
 const AppRoutes = (): JSX.Element => {
   const location = useLocation()
@@ -40,7 +43,8 @@ const AppRoutes = (): JSX.Element => {
           <Route path="/LocalMusic" element={<LocalMusic />} />
           <Route path="/HistoryMusic" element={<HistoryMusic />} />
           <Route path="/AllMusic" element={<AllMusic />} />
-          <Route path="/SearchTable" element={<SearchTable />} />
+          {/*<Route path="/SearchTable" element={<SearchTable />} />*/}
+          <Route path="/InterMusicTable" element={<InterMusicTable />} />
           <Route path="/MyLikeMusic" element={<MyLikeMusic />} />
           {/*<Route path="/Like" element={<Like />} />*/}
         </Routes>

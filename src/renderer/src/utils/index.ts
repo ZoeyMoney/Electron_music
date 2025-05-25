@@ -1,12 +1,14 @@
 import ColorThief from 'colorthief'
 import { LocalMusicInfo, MyLikeMusicList, PlayListProps, SongProps } from '@renderer/InterFace'
 import { getMusicInfo } from '@renderer/Api'
-import { store } from '@renderer/store/store'
-import { setPlayInfo } from "@renderer/store/counterSlice";
-import { useRef } from "react";
+import { RootState, store } from '@renderer/store/store'
+import { setMenuDataType, setPlayInfo } from '@renderer/store/counterSlice'
+import { useCallback, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { addToast } from '@heroui/react'
 import li from '@renderer/assets/image/Library-1.jpg'
+import { useDispatch, useSelector } from 'react-redux'
+import { pauseAudio } from '@renderer/utils/audioConfig'
 
 //格式化日期 年月日
 export const formatDate = (date: string | Date): string => {
@@ -153,6 +155,7 @@ const fetchAndDispatchPlayInfo = async (song: SongProps & { localPath?: boolean 
 
 // 播放下一首歌
 export const playNextSong = async (playList: SongProps[], currentId: string): Promise<void> => {
+  console.log(playList,currentId,'12345')
   if (!playList || playList.length === 0) {
     console.warn('播放列表为空')
     return
@@ -352,3 +355,69 @@ export const handleAddMusic = async (): Promise<LocalMusicInfo[] | void> => {
     });
   }
 };
+
+// 生成基于歌曲ID的颜色
+export const getAlbumColor = (id?: string): string => {
+  const colors = [
+    'bg-green-500',
+    'bg-yellow-500',
+    'bg-purple-500',
+    'bg-red-500',
+    'bg-cyan-500',
+    'bg-orange-500'
+  ]
+
+  const safeId = id ?? ""; // 如果 undefined，则当成空字符串
+
+  const hash = Array.from(safeId).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return colors[hash % colors.length];
+};
+
+//双击播放音乐
+export const useHandleDoubleClickPlay = (setLinId?: (id: string) => void) => {
+  const dispatch = useDispatch()
+  const { playInfo } = useSelector((state: RootState) => state.counter)
+
+  const handleDoubleClick = useCallback(
+    async (song: SongProps): Promise<void> => {
+      setLinId?.(song.id ?? '')
+      pauseAudio()
+
+      dispatch(
+        setPlayInfo({
+          ...playInfo,
+          loading: true,
+          href: '', // 清空 href，防止旧音频播放
+        })
+      )
+
+      try {
+        const res = await createSongInfo(song)
+        if (res?.status === 200 && res.data) {
+          dispatch(
+            setPlayInfo({
+              music_title: song.music_title,
+              artist: song.artist,
+              href: res.data.mp3_url,
+              pic: res.data.pic,
+              lrc: res.data.lrc,
+              loading: false,
+              id: song.id,
+            })
+          )
+          dispatch(setMenuDataType('playListMusicType'))
+        } else {
+          dispatch(setPlayInfo({ ...playInfo, loading: false }))
+          addToast({ title: '获取歌曲信息失败', color: 'danger', timeout: 3000 })
+        }
+      } catch (error) {
+        console.error('获取歌曲失败：', error)
+        dispatch(setPlayInfo({ ...playInfo, loading: false }))
+        addToast({ title: '请求异常，请稍后再试', color: 'danger', timeout: 3000 })
+      }
+    },
+    [dispatch, playInfo, pauseAudio, addToast, setLinId]
+  )
+
+  return handleDoubleClick
+}

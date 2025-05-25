@@ -21,7 +21,8 @@ const HeaderSearch: React.FC = () => {
         })
         return
       }
-      navigate('/SearchTable', { state: { query: value } })
+      // navigate('/SearchTable', { state: { query: value } })
+      navigate('/InterMusicTable', { state: { query: value } })
     }
   }
 

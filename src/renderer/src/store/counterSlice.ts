@@ -36,7 +36,7 @@ const initialState: RootState = {
     lrc: '无歌词',
     id: '',
   },
-  sort: 'asc'
+  sort: 'asc', //排序
 }
 
 export const counterSlice = createSlice({
