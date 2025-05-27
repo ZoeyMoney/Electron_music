@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Card,
   CardFooter,
@@ -15,14 +15,13 @@ import { SwiperSlide, Swiper } from 'swiper/react'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import { Navigation } from 'swiper/modules'
-import { getMusicLibrary, getMusicLibraryListSwiper } from "@renderer/Api";
-import { PlayListProps, ViewMoreProps } from "@renderer/InterFace";
 import { useNavigate } from "react-router-dom";
 import { pauseAudio } from "@renderer/utils/audioConfig";
 import { useDispatch, useSelector } from "react-redux";
 import { setPlayInfo } from "@renderer/store/counterSlice";
 import { RootState } from "@renderer/store/store";
 import { createSongInfo } from "@renderer/utils";
+import { useMusicLibrary, useMusicLibrarySwiper } from '@renderer/components/Hook'
 
 export const ListboxWrapper = ({children}:{children: React.ReactNode}): JSX.Element => (
   <div className="w-full max-w-[260px] border-small px-1rounded-small border-default-200 dark:border-default-100">
@@ -36,10 +35,6 @@ const MusicLibrary: React.FC = () => {
   const dispatch = useDispatch()
   const playInfo = useSelector((state: RootState) => state.counter.playInfo)
   // const [yx, setYx] = useState([])
-  const [yxMusic, setYxMusic] = useState<PlayListProps[]>([])
-  const [yxSwiper, setYxSwiper] = useState<ViewMoreProps[]>([])
-  const [yxMusicLoading, setYxMusicLoading] = useState<boolean>(true) //13首音乐
-  const [yxSwiperLoading, setYxSwiperLoading] = useState<boolean>(true) // swiper
   const navigate = useNavigate()
   useEffect(() => {
     if (swiperRef.current && prevRef.current && nextRef.current) {
@@ -52,34 +47,9 @@ const MusicLibrary: React.FC = () => {
       }
     }
   }, [swiperRef.current, prevRef.current, nextRef.current]) // 依赖 Swiper 和 refs
-  const fetchData = async (): Promise<void> => {
-    try {
-      //乐库 请求
-      /*const yxRes = await getMusicLibraryList()
-      if (yxRes.data.code === 200) {
-        setYx(yxRes.data.data)
-        setYxLoading(false)
-      }*/
-      //乐库 13 首歌曲请求
-      const yk_djRes = await getMusicLibrary()
-      if (yk_djRes.status === 200) {
-        setYxMusicLoading(false)
-        setYxMusic(yk_djRes.data.data)
-      }
-      // 乐库swiper
-      const swiperRes = await getMusicLibraryListSwiper()
-      console.log('swiperRes：',swiperRes);
-      if (swiperRes.status === 200) {
-        setYxSwiperLoading(false)
-        setYxSwiper(swiperRes.data.data)
-      }
-    } catch (e) {
-      console.log('歌单请求失败：',e);
-    }
-  }
-  useEffect(() => {
-    fetchData()
-  }, []);
+  const { data: yxMusic, isLoading: yxMusicLoading } = useMusicLibrary();
+  const { data: yxSwiper, isLoading: yxSwiperLoading } = useMusicLibrarySwiper();
+
   // swiper 点击事件
   const swiperMusicClick = (item: { url_href: string, pic: string }): void => {
     console.log(item);

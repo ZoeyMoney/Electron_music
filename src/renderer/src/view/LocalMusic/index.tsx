@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import {
   addToast,
-  Button, Checkbox,
+  Button,
+  Checkbox,
   Tab,
   Table,
   TableBody,
@@ -17,13 +18,13 @@ import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from "@renderer/store/store";
 import Lottie from "lottie-react";
 import animationData from '@renderer/assets/lottie/Animation.json'
-import LocalMusicTable from "@renderer/components/LocalMusicTable";
 import { ModalWrapper } from '@renderer/components/ModalWrapper'
 import { LocalMusicInfo } from '@renderer/InterFace'
 import { DeleteIcon } from '@renderer/assets/SVG'
 import { setMusicLocalDataList } from '@renderer/store/counterSlice'
 import { IoMdCheckmark } from "react-icons/io";
 import { VscChromeClose } from "react-icons/vsc";
+import AnimatedList from '@renderer/components/AnimatedList'
 
 const LocalMusic: React.FC = () => {
   //获取本地歌曲
@@ -31,7 +32,7 @@ const LocalMusic: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false)
   const [musicList, setMusicList] = useState<LocalMusicInfo[]>([])
   const dispatch = useDispatch()
-  console.log(localMusicList)
+  console.log(localMusicList,'555')
   // 过滤添加歌曲
   const [isFilter, setIsFilter] = useState<boolean>(false)
   // 打开模态框
@@ -86,16 +87,6 @@ const LocalMusic: React.FC = () => {
   const handleDelete = (id: string): void => {
     setMusicList((prevList) => prevList.filter((item) => item.id !== id));
   }
-
-  const columns = [
-    { name: '序号', uid: 'id', width: '50px' },
-    { name: '标题', uid: 'music_title', width: '150px' },
-    { name: '歌手', uid: 'artist', width: '150px' },
-    { name: '专辑', uid: 'album', width: '150px' },
-    { name: '日期', uid: 'date', width: '120px' },
-    { name: '时长', uid: 'duration', width: '100px' },
-    { name: '操作', uid: 'action', width: '80px' },
-  ];
 
   return (
     <div className={'grid h-[75vh] w-full'} style={{ gridTemplateRows: 'auto 1fr' }}>
@@ -165,7 +156,7 @@ const LocalMusic: React.FC = () => {
 
       <div>
         <h1 className={'mb-2 mt-3 text-[20px] font-bold'}>本地和下载</h1>
-        <div className="flex w-full flex-col">
+        <div className="flex w-full items-center justify-between">
           <Tabs
             aria-label="Options"
             classNames={{
@@ -188,23 +179,23 @@ const LocalMusic: React.FC = () => {
               />
             ))}
           </Tabs>
+          {localMusicList.length > 0 && (
+            <Button color="success" size="sm" onPress={() => handleOpenMusicClick()}>
+              添加歌曲
+            </Button>
+          )}
         </div>
-      </div>
-      <div
-        className={'overflow-y-auto grid'}
-        style={{ gridTemplateRows: '1fr', alignContent: 'start' }}
-      >
         {localMusicList.length > 0 ? (
-          <LocalMusicTable
-            items={localMusicList}
-            columns={columns}
-            menuDataType={'localMusicList'}
-            showSongInfo={true}
-            showDate={true}
-            showDuration={true}
-            showActions={true}
-            onOpen={handleOpenMusicClick}
-          />
+          <div className={'p-2.5 h-[62vh] bg-[#1e1e1ead]'}>
+            <AnimatedList
+              data={localMusicList}
+              loadMore={() => {}}
+              hasMore={false}
+              sourceType={'local'}
+              showAlbum={true}
+              showDuration={true}
+            />
+          </div>
         ) : (
           <div className={'flex justify-center items-center flex-col'}>
             <Lottie animationData={animationData} loop={true} style={{ width: 200, height: 200 }} />

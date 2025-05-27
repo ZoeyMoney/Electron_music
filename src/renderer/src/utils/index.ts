@@ -1,14 +1,21 @@
 import ColorThief from 'colorthief'
-import { LocalMusicInfo, MyLikeMusicList, PlayListProps, SongProps } from '@renderer/InterFace'
+import { LocalMusicInfo, MenuItemProps, MyLikeMusicList, PlayListProps, SongProps } from '@renderer/InterFace'
 import { getMusicInfo } from '@renderer/Api'
 import { RootState, store } from '@renderer/store/store'
-import { setMenuDataType, setPlayInfo } from '@renderer/store/counterSlice'
+import {
+  removeMusicLocalDataList,
+  setHistoryPlayList,
+  setMenuDataType,
+  setPlayInfo
+} from '@renderer/store/counterSlice'
 import { useCallback, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { addToast } from '@heroui/react'
 import li from '@renderer/assets/image/Library-1.jpg'
 import { useDispatch, useSelector } from 'react-redux'
 import { pauseAudio } from '@renderer/utils/audioConfig'
+import { Download, ListPlus, Share, Trash2 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 
 //格式化日期 年月日
 export const formatDate = (date: string | Date): string => {
@@ -290,7 +297,7 @@ export const LocalAndDownloadList = [
   }
 ]
 
-//本地音乐
+//添加本地音乐
 export const handleAddMusic = async (): Promise<LocalMusicInfo[] | void> => {
   try {
     const result = await window.api.selectMusicFolder();
@@ -337,6 +344,7 @@ export const handleAddMusic = async (): Promise<LocalMusicInfo[] | void> => {
           duration: formattedDuration,
           href: path,
           pic: li,
+          album: '未知专辑',
           lrc: '无歌词',
           localPath: true, //是否是本地音乐  true 是 false否
         };
@@ -376,48 +384,181 @@ export const getAlbumColor = (id?: string): string => {
 //双击播放音乐
 export const useHandleDoubleClickPlay = (setLinId?: (id: string) => void) => {
   const dispatch = useDispatch()
-  const { playInfo } = useSelector((state: RootState) => state.counter)
+  const { playInfo, historyPlayList } = useSelector((state: RootState) => state.counter)
+  const queryClient = useQueryClient()
 
   const handleDoubleClick = useCallback(
-    async (song: SongProps): Promise<void> => {
+    async (song: LocalMusicInfo | SongProps, sourceType?: 'playListMusicType' | 'allMusicList' | 'localMusicList' | string | '1'): Promise<void> => {
       setLinId?.(song.id ?? '')
       pauseAudio()
-
-      dispatch(
-        setPlayInfo({
-          ...playInfo,
-          loading: true,
-          href: '', // 清空 href，防止旧音频播放
-        })
-      )
+      dispatch(setPlayInfo({ ...playInfo, loading: true, href: '' }))
 
       try {
-        const res = await createSongInfo(song)
-        if (res?.status === 200 && res.data) {
+        let finalHref = ''
+        if ('localPath' in song && song.localPath) {
+          finalHref = song.href
           dispatch(
             setPlayInfo({
               music_title: song.music_title,
               artist: song.artist,
-              href: res.data.mp3_url,
-              pic: res.data.pic,
-              lrc: res.data.lrc,
+              href: finalHref,
+              pic: song.pic,
+              lrc: song.lrc,
               loading: false,
               id: song.id,
             })
           )
-          dispatch(setMenuDataType('playListMusicType'))
         } else {
-          dispatch(setPlayInfo({ ...playInfo, loading: false }))
-          addToast({ title: '获取歌曲信息失败', color: 'danger', timeout: 3000 })
+          // 使用 queryClient.fetchQuery，复用 useSongInfo 的逻辑
+          const songInfo = await queryClient.fetchQuery({
+            queryKey: ['songInfo', song.href],
+            queryFn: async () => {
+              const res = await getMusicInfo({ href: song.href })
+              return res.data
+            },
+            staleTime: 1000 * 60 * 24,
+            gcTime: 1000 * 60 * 24,
+          })
+          console.log(songInfo)
+          if (songInfo?.mp3_url) {
+            finalHref = songInfo.mp3_url
+            dispatch(
+              setPlayInfo({
+                music_title: song.music_title,
+                artist: song.artist,
+                href: songInfo.mp3_url,
+                pic: songInfo.pic,
+                lrc: songInfo.lrc,
+                loading: false,
+                id: song.id,
+              })
+            )
+          } else {
+            throw new Error('获取歌曲信息失败')
+          }
+        }
+
+        if (sourceType) {
+          dispatch(setMenuDataType(sourceType))
+        }
+
+        // 添加到历史播放记录（去重）
+        const isExist = historyPlayList.some(
+          (item) => item.id === song.id || item.href === finalHref
+        )
+        if (!isExist) {
+          dispatch(
+            setHistoryPlayList({
+              ...song,
+              href: finalHref,
+              date: Date.now(),
+            })
+          )
         }
       } catch (error) {
         console.error('获取歌曲失败：', error)
         dispatch(setPlayInfo({ ...playInfo, loading: false }))
-        addToast({ title: '请求异常，请稍后再试', color: 'danger', timeout: 3000 })
+        addToast({ title: '请求异常或歌曲信息获取失败', color: 'danger', timeout: 3000 })
       }
     },
-    [dispatch, playInfo, pauseAudio, addToast, setLinId]
+    [dispatch, playInfo, historyPlayList, setLinId, queryClient]
   )
 
-  return handleDoubleClick
+  // 新增：生成绑定了 item 和 sourceType 的回调
+  const createDoubleClickHandler = useCallback(
+    (song: LocalMusicInfo | SongProps, sourceType?: string) => {
+      return (event: React.MouseEvent) => handleDoubleClick(song, sourceType)
+    },
+    [handleDoubleClick]
+  )
+
+  return { handleDoubleClick, createDoubleClickHandler }
+}
+// 获取歌曲名首字母
+export const getInitials = (title: string): string => {
+  return title
+    .split(" ")
+    .map((word) => word[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase()
+}
+// 公共菜单项
+export const getCommonMenuItems = (
+  song: SongProps,
+  onClose: () => void,
+  onAddToPlaylist: (song: SongProps, playlistId: string | number) => void,
+  sourceType: 'playListMusicType' | 'allMusicList' | 'localMusicList' | string | '1'
+): MenuItemProps[] => {
+  const myLikeMusic = getSelfPlayList()
+
+  const addToPlaylistMenu: MenuItemProps = {
+    icon: ListPlus,
+    label: '添加到播放列表',
+    children: myLikeMusic.map((playlist) => ({
+      label: playlist.name,
+      onClick: () => {
+        onAddToPlaylist(song, playlist.id)
+        onClose()
+        console.log('来源：',sourceType)
+      }
+    }))
+  }
+
+  return [
+    addToPlaylistMenu,
+    {
+      icon: Download,
+      label: '下载',
+      onClick: () => {
+        console.log('下载:', song.music_title)
+        onClose()
+      }
+    },
+    {
+      icon: Share,
+      label: '分享',
+      onClick: () => {
+        console.log('分享:', song.music_title)
+        onClose()
+      }
+    }
+  ]
+}
+//  菜单项
+export const getMenuItems = (
+  song: SongProps,
+  onClose: () => void,
+  onAddToPlaylist: (song: SongProps, playlistId: number | string) => void,
+  sourceType: 'playListMusicType' | 'allMusicList' | 'localMusicList' | string | '1'
+): MenuItemProps[] => {
+  return getCommonMenuItems(song, onClose, onAddToPlaylist, sourceType)
+}
+// 本地音乐菜单项
+export const getLocalMenuItems = (
+  song: SongProps,
+  onClose: () => void,
+  onAddToPlaylist: (song: SongProps, playlistId: number | string) => void,
+  sourceType: 'playListMusicType' | 'allMusicList' | 'localMusicList' | string | '1'
+): MenuItemProps[] => {
+  return [
+    ...getCommonMenuItems(song, onClose, onAddToPlaylist, sourceType),
+    {
+      icon: Trash2,
+      label: '从列表中移除',
+      onClick: () => {
+        //移除本地歌曲
+        if (song.id != null) {
+          store.dispatch(removeMusicLocalDataList(song.id))
+          addToast({
+            title: '已从列表中移除',
+            color: 'success',
+            timeout: 2000
+          })
+        }
+        onClose()
+      },
+      danger: true
+    }
+  ]
 }

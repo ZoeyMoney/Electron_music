@@ -30,6 +30,9 @@ export interface SongProps {
   pic?: string
   mp3_url?: string
   id?: string
+  duration?: string
+  album?: string
+  date?: string
 }
 export interface MyLikeMusicList {
   id: number | string
@@ -104,4 +107,13 @@ export interface SettingDataProps {
     label: string
     component: JSX.Element
   }[]
+}
+
+//右键菜单
+export interface MenuItemProps {
+  icon?: React.ComponentType<{ className?: string }>
+  label: string
+  children?: MenuItemProps[]
+  onClick?: () => void
+  danger?: boolean
 }

@@ -1,31 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import {
-  Button,
-  Image,
-} from '@heroui/react'
-import { FaPlay } from 'react-icons/fa6'
-import { getPlayListDetail } from "@renderer/Api";
-import { v4 as uuidv4 } from 'uuid'
-import { RootState } from '@renderer/store/store'
-import { useDispatch, useSelector } from "react-redux";
-import { columns, extractColors } from "@renderer/utils";
-import { ContextMenuItem } from '@renderer/components/ContextMenuProvider'
-import MusicTable from '@renderer/components/MusicTable'
-import { ModalState, MyLikeMusicList, SongProps } from '@renderer/InterFace'
-import { setPlayListMusic } from "@renderer/store/counterSlice";
+import { Image } from '@heroui/react'
+import { useDispatch } from 'react-redux'
+import { extractColors } from '@renderer/utils'
+import AnimatedList from '@renderer/components/AnimatedList'
+import { usePlaylistDetail } from '@renderer/components/Hook'
+import { setPlayListMusic } from '@renderer/store/counterSlice'
 
 const ContentDetails: React.FC = () => {
   const location = useLocation()
   const imgRef = useRef<HTMLImageElement>(null)
-  const [musicList, setMusicList] = useState<SongProps[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
   const [colors, setColors] = useState<string[]>([])
-  const myLikeMusic = useSelector((state: RootState) => state.counter.myLikeMusic)
-  const [modalState, setModalState] = useState<ModalState>({ isOpen: false, content: '' });
-  const musicTableRef = useRef<{
-    handleToggleLike: (song: SongProps, groupId?: string | number, forceAdd?: boolean) => Promise<void>
-  }>(null)
   const dispatch = useDispatch()
   // 颜色提取
   const handleImageLoad = async (): Promise<void> => {
@@ -38,54 +23,24 @@ const ContentDetails: React.FC = () => {
       }
     }
   }
+  const { data, isLoading, refetch, isStale } = usePlaylistDetail(
+    location.state.item.url_href
+  )
 
-  // 获取歌单数据
   useEffect(() => {
-    console.log('ContentDetails', location.state.item.url_href);
-    getPlayListDetail({ url: location.state.item.url_href }).then((res) => {
-      if (res.status === 200) {
-        setLoading(false)
-        const rawList = res.data.data.music_list
-        const listIndex = rawList.map((item: SongProps, index: number) => ({
-          ...item,
-          index: index + 1,
-          uuid: uuidv4(),
-        }))
-        setMusicList(listIndex)
-        dispatch(setPlayListMusic(listIndex))
-      }
-    })
-  }, [location.state.item.url_href])
-
-
-  // 右键菜单内容
-  const menuItems: ContextMenuItem[] = [
-    {
-      label: '添加歌单',
-      children: myLikeMusic.map((group: MyLikeMusicList) => ({
-        label: group.name,
-        onClick: ({ props }) => {
-          const song: SongProps = props
-          const groupSongs = group.songs || []
-          const alreadyExists = groupSongs.some((s) => s.href === song.href)
-          if (alreadyExists) {
-            setModalState({
-              isOpen: true,
-              content: `该歌曲已存在于「${group.name}」歌单中`,
-              song,
-              groupId: group.id,
-            })
-            return
-          }
-          musicTableRef.current?.handleToggleLike(song, group.id, true)
-        },
-      })),
-    },
-    { label: '-' },
-  ]
+    if (location.state.item.url_href && isStale) {
+      refetch()
+    }
+  }, [location.state.item.url_href, isStale, refetch])
+  const hasMore = data?.has_next ?? true;
+  useEffect(() => {
+    if (data?.music_list) {
+      dispatch(setPlayListMusic(data.music_list))
+    }
+  }, [data?.music_list])
   return (
     <div
-      className={'rounded-[5px] overflow-hidden'}
+      className={'rounded-[5px] h-[75vh] flex flex-col'}
       style={{
         background: `linear-gradient(to bottom, ${colors[0] || '#000'}, ${colors[1] || '#000'})`
       }}
@@ -109,22 +64,15 @@ const ContentDetails: React.FC = () => {
         </div>
       </div>
       <div
-        className={'p-2.5'}
+        className={'p-2.5 h-[75vh]'}
         style={{ background: 'linear-gradient(0deg, black 83%, transparent 96%)' }}
       >
-        <Button isIconOnly radius="full" color="danger">
-          <FaPlay color={'white'} />
-        </Button>
-        {/* 音乐列表 */}
-        <MusicTable
-          menuItems={menuItems}
-          columns={columns}
-          loading={loading}
-          musicList={musicList}
-          myLikeMusic={myLikeMusic}
-          modalState={modalState}
-          ref={musicTableRef}
-          onModalClose={() => setModalState({ isOpen: false, content: '' })}
+        <AnimatedList
+          data={data?.music_list || []}
+          loadMore={() => {}}
+          hasMore={hasMore}
+          isLoading={isLoading}
+          sourceType={'playlist'}
         />
       </div>
     </div>

@@ -6,7 +6,7 @@ import { GrPowerCycle } from 'react-icons/gr'
 import { addToast, Slider } from "@heroui/react";
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from '@renderer/store/store'
-import { setAudioState, setHistoryPlayList } from "@renderer/store/counterSlice";
+import { setAudioState } from "@renderer/store/counterSlice";
 import {
   isPlayingAudio,
   pauseAudio,
@@ -33,13 +33,11 @@ const PlayerSlider: React.FC = () => {
       // 暂停之前的音频（避免多个同时播放）
       pauseAudio();
       playAudio(playInfo.href, 0)
-      dispatch(setHistoryPlayList(playInfo))
     }
   }, [playInfo.href])
   //监听播放结束回调
   registerOnEnded(() => {
     (menuHandlerMap[menuDataType] || menuHandlerMap['default'])(playInfo.id)
-    // console.log('currentPlaylistType:', currentPlaylistType);
     console.log('播放完了，下一首');
   })
   // 拖动进度条
@@ -69,6 +67,7 @@ const PlayerSlider: React.FC = () => {
 
     ;(menuHandlerMap[menuDataType] || menuHandlerMap['default'])(playInfo.id, direction)
   }, 3000) // 节流间隔3秒
+
   return (
     <div className="flex flex-col justify-evenly py-[9px]">
       <div

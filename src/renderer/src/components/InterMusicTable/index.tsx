@@ -1,92 +1,61 @@
 import React, { useEffect, useState } from 'react';
-import { MotionList } from '@renderer/components/AnimatedList';
-import { getSearch } from '@renderer/Api';
+import AnimatedList from '@renderer/components/AnimatedList';
 import { SongProps } from '@renderer/InterFace';
 import { useLocation } from 'react-router-dom';
-import { SongItem } from '@renderer/components/SongItem';
-import { Button, Skeleton, Spinner } from '@heroui/react'
+import { Skeleton } from '@heroui/react';
 import { useDispatch } from 'react-redux';
 import { setPlayListMusic } from '@renderer/store/counterSlice';
-import InfiniteScroll from 'react-infinite-scroll-component';
 import { useThrottleFn } from '@renderer/utils'
+import { useSearch } from '@renderer/components/Hook'
 
 const InterMusicTable: React.FC = () => {
   const location = useLocation();
   const [query, setQuery] = useState(location.state?.query || '');
-  const [musicList, setMusicList] = useState<SongProps[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const dispatch = useDispatch();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-
+  // const [isLoading, setIsLoading] = useState(false);
+  // 1. 同步 query
   useEffect(() => {
     if (location.state?.query && location.state.query !== query) {
-      setQuery(location.state.query)
+      setQuery(location.state.query);
     }
-  }, [location.state.query])
+  }, [location.state?.query]);
 
-// 获取歌单数据
+  // 2. 使用 react-query 的分页 hook
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    refetch,
+    isStale,
+  } = useSearch(query);
+
+  // 3. 打平数据并计算 index
+  const flatMusicList: SongProps[] = data?.pages?.flatMap(page => page.list ?? []) ?? [];
+
+  // 4. 同步播放列表
   useEffect(() => {
-    if (!query) return
-    setLoading(true)
-    getSearch({ query, page: 1 }).then((res) => {
-      if (res.status === 200) {
-        const rawList = res.data.data;
-        const listIndex = rawList.map((item: SongProps, index: number) => ({
-          ...item,
-          index: index + 1,
-        }));
-        setMusicList(listIndex);
-        dispatch(setPlayListMusic(listIndex));
-        setCurrentPage(1);
-        setHasMore(res.data.has_next);
-      }
-      setLoading(false);
-    });
-  }, [query])
-
-  // 加载更多
-  const fetchMoreData = useThrottleFn(async () => {
-    setIsLoading(true)
-    const nextPage = currentPage + 1
-    const res = await getSearch({ query: location.state.query, page: nextPage })
-
-    if (res.status === 200) {
-      const rawList = res.data.data
-      const newList = rawList.map((item: SongProps, index: number) => ({
-        ...item,
-        index: musicList.length + index + 1,
-      }))
-      setMusicList((prev) => [...prev, ...newList])
-      setCurrentPage(nextPage)
-      setHasMore(res.data.has_next)
-      setIsLoading(false)
-    } else {
-      setHasMore(false)
+    if (flatMusicList.length > 0) {
+      dispatch(setPlayListMusic(flatMusicList));
     }
-  }, 3000)
- /* const fetchMoreData = async (): Promise<void> => {
-    const nextPage = currentPage + 1
-    const res = await getSearch({ query: location.state.query, page: nextPage })
+  }, [flatMusicList, dispatch]);
 
-    if (res.status === 200) {
-      const rawList = res.data.data
-      const newList = rawList.map((item: SongProps, index: number) => ({
-        ...item,
-        index: musicList.length + index + 1,
-      }))
-      setMusicList((prev) => [...prev, ...newList])
-      setCurrentPage(nextPage)
-      setHasMore(res.data.has_next)
-    } else {
-      setHasMore(false)
+  const throttledFetchNextPage = useThrottleFn(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }*/
+  }, 3000);
+  // 5. 缓存过期自动刷新
+  useEffect(() => {
+    if (query && isStale) {
+      refetch();
+    }
+  }, [query, isStale, refetch]);
 
   return (
     <div className="bg-[#1e1e1ead] rounded-[5px]">
-      {loading ? (
+      {isLoading ? (
         <div>
           {Array.from({ length: 5 }, (_, index) => (
             <div
@@ -102,16 +71,18 @@ const InterMusicTable: React.FC = () => {
           ))}
         </div>
       ) : (
-        <>
-          <MotionList delay={100}>
-            {musicList.map((item) => (
-              <SongItem key={item.id} item={item} />
-            ))}
-          </MotionList>
-        </>
+        <div style={{ height: '75vh' }}>
+          <AnimatedList
+            data={flatMusicList}
+            loadMore={throttledFetchNextPage}
+            hasMore={hasNextPage || false}
+            isLoading={isFetchingNextPage}
+            sourceType={'search'}
+          />
+        </div>
       )}
     </div>
-  )
+  );
 };
 
 export default InterMusicTable;

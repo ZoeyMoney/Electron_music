@@ -7,7 +7,6 @@ import { BiSolidTimeFive } from 'react-icons/bi'
 import { FaMusic } from 'react-icons/fa6'
 import { useNavigate } from 'react-router-dom'
 import {
-  addToast,
   Input,
   Listbox,
   ListboxItem,
@@ -15,11 +14,9 @@ import {
 } from "@heroui/react";
 import { IoIosAdd } from 'react-icons/io'
 import { useDispatch, useSelector } from 'react-redux'
-import { deleteMyLikeMusicList, setMyLikeMusic } from "@renderer/store/counterSlice";
+import { setMyLikeMusic } from "@renderer/store/counterSlice";
 import { v4 as uuidv4 } from 'uuid'
 import { LikeFill } from "@renderer/assets/SVG";
-import { useContextMenuTrigger } from "@renderer/components/ContextMenuProvider/useContextMenuTrigger";
-import ContextMenuProvider, { ContextMenuItem } from "@renderer/components/ContextMenuProvider";
 import { ModalWrapper } from "@renderer/components/ModalWrapper";
 
 const LeftMenu: React.FC = () => {
@@ -30,8 +27,6 @@ const LeftMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false) //创建歌单模态框
   const [MusicOpen, setMusicOpen] = useState(false) // 删除模态框
   const myLikeMusic = useSelector((state: any) => state.counter.myLikeMusic); //我喜欢的歌单
-  const { handleContextMenu, hideAll} = useContextMenuTrigger()//右键菜单
-  const [menuItemsInfo, setMenuItemsInfo] = useState<any>('') //歌单信息
   //内容
   const menuData: menuDataProps[] = [
     {
@@ -79,13 +74,13 @@ const LeftMenu: React.FC = () => {
   const MusicHandleClose = (): void => setMusicOpen(false)
   //提交删除模态框
   const onSubmitData = (): void => {
-    dispatch(deleteMyLikeMusicList({ id: menuItemsInfo.id }))
-    addToast({
+    // dispatch(deleteMyLikeMusicList({ id: menuItemsInfo.id }))
+    /*addToast({
       title: '删除成功',
       description: `自建歌单中的 ${menuItemsInfo.name} 已删除`,
       color: 'success',
       timeout: 2000
-    })
+    })*/
   }
   //关闭创建歌单模态框情况内容
   const handleClose = (): void => {
@@ -109,16 +104,6 @@ const LeftMenu: React.FC = () => {
       setPlaylistName('');  // 清空输入框
     }
   };
-  //右键菜单内容
-  const menuItems: ContextMenuItem[] = [
-    {
-      label: '删除',
-      onClick: ({ props }: any) => {
-        setMenuItemsInfo(props)
-        setMusicOpen(true)
-      },
-    }
-  ]
   useEffect(() => {
     console.log('歌单已更新:', myLikeMusic);
   }, [myLikeMusic]);
@@ -151,7 +136,6 @@ const LeftMenu: React.FC = () => {
       </div>
       {/*自建歌单列表*/}
       <div>
-        <ContextMenuProvider items={menuItems} />
         <Listbox
           variant="flat"
           color={'default'}
@@ -165,8 +149,6 @@ const LeftMenu: React.FC = () => {
               startContent={<LikeFill className={`${iconClasses} w-[18px] !text-[#ff3144]`} />}
               style={{ fontSize: '15px' }}
               textValue={item.name}
-              onContextMenu={handleContextMenu(item)}
-              onClick={() => hideAll()}
             >
               <span style={{ fontSize: '12px' }}>{item.name}</span>
             </ListboxItem>
@@ -201,7 +183,7 @@ const LeftMenu: React.FC = () => {
         actionText={'确认删除'}
         buttonSize={'md'}>
         <p className={'text-[13px]'}>
-          你确定要删除这个 [ <span className={'text-[#f31260]'}>{menuItemsInfo.name}</span> ]
+          你确定要删除这个 [ <span className={'text-[#f31260]'}>123</span> ]
           歌单吗？
         </p>
         <p className={'text-[#f31260] text-[13px]'}>删除后，歌单数据将无法恢复。</p>

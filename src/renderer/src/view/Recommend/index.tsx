@@ -1,42 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Pagination, Autoplay } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/pagination'
 import MusicSwiper from '@renderer/components/MusicSwiper'
-import { getPlaylist } from '@renderer/Api'
 import MusicList from '@renderer/components/MusicList'
 import { useNavigate } from 'react-router-dom'
+import { usePlaylist } from '@renderer/components/Hook'
 
 const Recommend: React.FC = () => {
-  const [playList, setPlayList] = useState([])
-  const [tjImageList, setTjImageList] = useState([])
-  const [loading, setLoading] = useState<boolean>(true)
-  const [MusicListLoading, setMusicListLoading] = useState<boolean>(true)
   const navigate = useNavigate()
-
-  const fetchData = async (): Promise<void> => {
-    try {
-      //根据 您 的喜好推荐
-      const playListRes = await getPlaylist()
-      if (playListRes.status === 200) {
-        setPlayList(playListRes.data.data)
-        setLoading(false)
-      }
-      //火热音乐推荐
-      const tjImageListRes = await getPlaylist({ page: 2 })
-      if (tjImageListRes.status === 200) {
-        setMusicListLoading(false)
-        setTjImageList(tjImageListRes.data.data)
-      }
-    } catch (e) {
-      console.log('歌单接口请求失败：', e)
-    }
-  }
-  useEffect(() => {
-    fetchData()
-  }, [])
-
+  const { data: page1Data, isLoading: loading1 } = usePlaylist(1, 10)
+  const { data: page2Data, isLoading: loading2 } = usePlaylist(2, 10)
   //获取轮播图
   const swiperImage = import.meta.glob('@renderer/assets/image/swiper-*.jpg', { eager: true })
   const swiperList = Object.values(swiperImage).map((item, index) => ({
@@ -47,7 +22,6 @@ const Recommend: React.FC = () => {
   const musicClick = (item: unknown): void => {
     navigate('/ContentDetails', { state: { item } })
   }
-
   return (
     <div className={'w-full h-full'}>
       <div className={'w-full h-[200px] overflow-hidden rounded-lg'}>
@@ -82,17 +56,17 @@ const Recommend: React.FC = () => {
       </div>
       <MusicSwiper
         title={'根据 您 的喜好推荐'}
-        list={playList}
+        list={page1Data ?? []}
         spaceBetween={10}
         slidesPerView={5}
         onClick={musicClick}
-        loading={loading}
+        loading={loading1}
       />
       <MusicList
         title={'火热音乐推荐'}
-        list={tjImageList}
+        list={page2Data ?? []}
         onClick={musicClick}
-        loading={MusicListLoading}
+        loading={loading2}
       />
     </div>
   )
