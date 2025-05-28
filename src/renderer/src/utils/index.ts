@@ -1,5 +1,12 @@
 import ColorThief from 'colorthief'
-import { LocalMusicInfo, MenuItemProps, MyLikeMusicList, PlayListProps, SongProps } from '@renderer/InterFace'
+import {
+  LocalMusicInfo,
+  MenuItemProps,
+  MyLikeMusicList,
+  PlayListProps,
+  SongProps,
+  UseDropdownMenuProps
+} from '@renderer/InterFace'
 import { getMusicInfo } from '@renderer/Api'
 import { RootState, store } from '@renderer/store/store'
 import {
@@ -8,7 +15,7 @@ import {
   setMenuDataType,
   setPlayInfo
 } from '@renderer/store/counterSlice'
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { addToast } from '@heroui/react'
 import li from '@renderer/assets/image/Library-1.jpg'
@@ -76,7 +83,7 @@ export const createSongInfo = async (item: SongProps): Promise<any> => {
 }
 
 // 解析歌词字符串成数组 [{ time: 秒数, text: 歌词 }, ...]
-export const parseLyrics = (lyrics: string): { time: number; text: string }[] => {
+export const parseLyrics = (lyrics: string = ''): { time: number; text: string }[] => {
   const lines = lyrics.trim().split('\n')
   return lines
     .map((line) => {
@@ -113,7 +120,29 @@ export const formatTime = (seconds: number): string => {
   const s = Math.floor(seconds % 60)
   return `${m}:${s.toString().padStart(2, '0')}`
 }
+// 封装添加历史记录的函数
+export const addToHistoryPlayList = (song: any): any => {
+  const { historyPlayList } = store.getState().counter;
 
+  // 检查歌曲是否已存在（去重）
+  const isExist = historyPlayList.some(
+    (item) => item.id === song.id || item.href === song.href
+  );
+
+  if (!isExist) {
+    store.dispatch(
+      setHistoryPlayList({
+        music_title: song.music_title,
+        artist: song.artist,
+        href: song.href,
+        pic: song.pic || '',
+        lrc: song.lrc || '无歌词',
+        id: song.id,
+        date: song.date || Date.now(),
+      })
+    );
+  }
+};
 //获取redux中的playListMusic歌单信息
 const getPlayListMusic = (): PlayListProps[] => store.getState().counter.playListMusic
 //获取本地音乐列表
@@ -126,37 +155,44 @@ const getMenuDataType = (): string => store.getState().counter.menuDataType
 const getRandomPlay = (): boolean => store.getState().counter.audioState.random
 // 辅助：根据歌曲请求歌曲信息，并派发redux更新
 const fetchAndDispatchPlayInfo = async (song: SongProps & { localPath?: boolean }): Promise<void> => {
-  if (song.localPath === true) {
-    // 本地音乐，不请求接口，直接用传进来的信息
-    store.dispatch(
-      setPlayInfo({
+  try {
+    let playInfoPayload: any;
+    if (song.localPath === true) {
+      // 本地音乐
+      playInfoPayload = {
         music_title: song.music_title,
         artist: song.artist,
-        href: song.href, // 本地路径
+        href: song.href,
         pic: song.pic || '',
         lrc: song.lrc || '无歌词',
         loading: false,
         id: song.id,
-      })
-    )
-  } else {
-    // 网络音乐，调用接口请求详细信息
-    try {
-      const res = await createSongInfo(song)
-      store.dispatch(
-        setPlayInfo({
-          music_title: song.music_title,
-          artist: song.artist,
-          href: res.data.mp3_url,
-          pic: res.data.pic,
-          lrc: res.data.lrc || '无歌词',
-          loading: false,
-          id: song.id,
-        })
-      )
-    } catch (err) {
-      console.error('请求网络音乐信息失败:', err)
+      };
+    } else {
+      // 网络音乐
+      const res = await createSongInfo(song);
+      if (!res.data.mp3_url) {
+        throw new Error('获取歌曲信息失败');
+      }
+      playInfoPayload = {
+        music_title: song.music_title,
+        artist: song.artist,
+        href: res.data.mp3_url,
+        pic: res.data.pic || '',
+        lrc: res.data.lrc || '无歌词',
+        loading: false,
+        id: song.id,
+      };
     }
+
+    // 更新 playInfo
+    store.dispatch(setPlayInfo(playInfoPayload));
+    // 添加到历史播放记录
+    addToHistoryPlayList(playInfoPayload);
+  } catch (err) {
+    console.error('请求音乐信息失败:', err);
+    store.dispatch(setPlayInfo({ ...store.getState().counter.playInfo, loading: false }));
+    addToast({ title: '请求音乐信息失败', color: 'danger', timeout: 3000 });
   }
 }
 
@@ -169,7 +205,6 @@ export const playNextSong = async (playList: SongProps[], currentId: string): Pr
   }
 
   const currentIndex = playList.findIndex((item) => item.id === currentId)
-
   if (getRandomPlay()) {
     if (playList.length === 1) {
       // 唯一歌曲直接播放
@@ -201,10 +236,9 @@ export const playNextSong = async (playList: SongProps[], currentId: string): Pr
 
 // 播放上一首歌
 export const playPrevSong = async (): Promise<void> => {
-  //取historyPlayList倒数第二个歌曲  再点点击 接着往上播放
-  const historyPlayList = store.getState().counter.historyPlayList
+  const historyPlayList = store.getState().counter.historyPlayList;
   if (historyPlayList.length > 1) {
-    const prevSong = historyPlayList[historyPlayList.length - 2]
+    const prevSong = historyPlayList[historyPlayList.length - 2];
     store.dispatch(
       setPlayInfo({
         music_title: prevSong.music_title,
@@ -215,11 +249,11 @@ export const playPrevSong = async (): Promise<void> => {
         loading: false,
         id: prevSong.id
       })
-    )
+    );
   } else {
-    console.log('没有上一首')
+    console.log('没有上一首');
   }
-}
+};
 
 //播放清单类型
 export const menuHandlerMap: Record<string, (id: string, direction?: 'next' | 'prev') => void> = {
@@ -271,7 +305,6 @@ export const menuHandlerMap: Record<string, (id: string, direction?: 'next' | 'p
     const menuDataType = getMenuDataType()
     //根据id匹配播放列表
     const targetList = playLists.find((item) => String(item.id) === String(menuDataType))
-    console.log(targetList)
     if (!targetList) {
       console.warn(`找不到 id 为 ${id} 的歌单`)
       return
@@ -380,9 +413,8 @@ export const getAlbumColor = (id?: string): string => {
   const hash = Array.from(safeId).reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return colors[hash % colors.length];
 };
-
 //双击播放音乐
-export const useHandleDoubleClickPlay = (setLinId?: (id: string) => void) => {
+export const useHandleDoubleClickPlay = (setLinId?: (id: string) => void): any => {
   const dispatch = useDispatch()
   const { playInfo, historyPlayList } = useSelector((state: RootState) => state.counter)
   const queryClient = useQueryClient()
@@ -454,6 +486,7 @@ export const useHandleDoubleClickPlay = (setLinId?: (id: string) => void) => {
               date: Date.now(),
             })
           )
+          console.log(historyPlayList)
         }
       } catch (error) {
         console.error('获取歌曲失败：', error)
@@ -467,7 +500,7 @@ export const useHandleDoubleClickPlay = (setLinId?: (id: string) => void) => {
   // 新增：生成绑定了 item 和 sourceType 的回调
   const createDoubleClickHandler = useCallback(
     (song: LocalMusicInfo | SongProps, sourceType?: string) => {
-      return (event: React.MouseEvent) => handleDoubleClick(song, sourceType)
+      return () => handleDoubleClick(song, sourceType)
     },
     [handleDoubleClick]
   )
@@ -561,4 +594,54 @@ export const getLocalMenuItems = (
       danger: true
     }
   ]
+}
+
+
+//右键菜单
+export const useDropdownMenu = ({ initialMenuType = '' }: UseDropdownMenuProps): any => {
+  const [showMenu, setShowMenu] = useState(false)
+  const [menuType, setMenuType] = useState(initialMenuType)
+  const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 })
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
+
+  const handleMoreClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const rect = moreButtonRef.current?.getBoundingClientRect()
+    if (rect) {
+      setDropdownPosition({
+        x: rect.left,
+        y: rect.bottom + 5,
+      })
+    }
+    setMenuType('more')
+    setShowMenu(prev => !prev)
+  }, [])
+
+  const handleContextMenu = useCallback((e: React.MouseEvent,item: any) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    setDropdownPosition({
+      x: e.clientX,
+      y: e.clientY,
+    })
+    setMenuType('context')
+    setSelectedItem(item);
+    setShowMenu(true)
+  }, [])
+
+  return {
+    showMenu,
+    setShowMenu,
+    menuType,
+    setMenuType,
+    dropdownPosition,
+    moreButtonRef,
+    handleMoreClick,
+    handleContextMenu,
+    selectedItem
+  }
 }

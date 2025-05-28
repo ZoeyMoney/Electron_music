@@ -116,4 +116,9 @@ export interface MenuItemProps {
   children?: MenuItemProps[]
   onClick?: () => void
   danger?: boolean
+  className?: string
+}
+//右键菜单那封装
+export interface UseDropdownMenuProps {
+  initialMenuType?: string
 }

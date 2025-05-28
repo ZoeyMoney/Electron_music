@@ -16,7 +16,7 @@ const AllMusic: React.FC = () => {
       <h1 className={'mb-[25px] mt-3 text-[20px] font-bold'}>
         全部音乐：<span className={'text-[13px] text-[#f31260]'}>本地歌单+自建歌单</span>
       </h1>
-      <div className={'h-[75vh] bg-[#1e1e1ead]'}>
+      <div className={'h-[67vh] bg-[#1e1e1ead]'}>
         <AnimatedList
           data={allSongs}
           loadMore={() => {}}

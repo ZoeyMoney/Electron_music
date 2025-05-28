@@ -5,7 +5,14 @@ import { LocalMusicInfo, ModalState, SongProps } from '@renderer/InterFace'
 import LikeButton from "@renderer/components/LikeButton"
 import { useDispatch, useSelector } from 'react-redux'
 import type { RootState } from "@renderer/store/store"
-import { getAlbumColor, getInitials, getLocalMenuItems, getMenuItems, useHandleDoubleClickPlay } from '@renderer/utils'
+import {
+  getAlbumColor,
+  getInitials,
+  getLocalMenuItems,
+  getMenuItems,
+  useDropdownMenu,
+  useHandleDoubleClickPlay
+} from '@renderer/utils'
 import DropdownMenu from "@renderer/components/DropdownMenu/DropdownMenu"
 import { setMyLikeMusicList } from '@renderer/store/counterSlice'
 import { ModalWrapper } from '@renderer/components/ModalWrapper'
@@ -30,15 +37,20 @@ export const SongItem: React.FC<SongItemProps> = ({
   const { myLikeMusic, audioState, playInfo } = useSelector((state: RootState) => state.counter)
   const [isHovered, setIsHovered] = useState(false)
   const [showPlay, setShowPlay] = useState(false)
-  const [showMenu, setShowMenu] = useState(false)
-  const [menuType, setMenuType] = useState<"more" | "context">("more")
-  const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 })
-  const moreButtonRef = useRef<HTMLButtonElement>(null)
   const { createDoubleClickHandler } = useHandleDoubleClickPlay()
   const [modalState, setModalState] = useState<ModalState>({ isOpen: false, content: '' });
   const musicTableRef = useRef<{
     handleToggleLike: (song: SongProps, groupId?: string | number, forceAdd?: boolean) => Promise<void>
   }>(null)
+  const {
+    showMenu,
+    setShowMenu,
+    menuType,
+    dropdownPosition,
+    moreButtonRef,
+    handleMoreClick,
+    handleContextMenu,
+  } = useDropdownMenu({ initialMenuType: '' })
   const dispatch = useDispatch()
   // 检查歌曲是否已点赞
   const isLiked = useMemo(
@@ -54,33 +66,6 @@ export const SongItem: React.FC<SongItemProps> = ({
     () => createDoubleClickHandler(item, sourceType),
     [createDoubleClickHandler, item, sourceType]
   )
-
-  const handleMoreClick = (e: React.MouseEvent): void => {
-    e.stopPropagation()
-    e.preventDefault()
-
-    const rect = moreButtonRef.current?.getBoundingClientRect()
-    if (rect) {
-      setDropdownPosition({
-        x: rect.left,
-        y: rect.bottom + 5,
-      })
-    }
-    setMenuType("more")
-    setShowMenu((prev) => !prev)
-  }
-
-  const handleContextMenu = (e: React.MouseEvent): void => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    setDropdownPosition({
-      x: e.clientX,
-      y: e.clientY,
-    })
-    setMenuType("context")
-    setShowMenu(true)
-  }
 
   //点赞
   const handleToggleLike = async (
@@ -100,7 +85,6 @@ export const SongItem: React.FC<SongItemProps> = ({
       )
     } else {
       // 添加到歌单
-      // const musicInfo = await createSongInfo(song)
       dispatch(
         setMyLikeMusicList({
           type: 'add',

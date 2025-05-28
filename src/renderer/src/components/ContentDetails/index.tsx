@@ -72,7 +72,7 @@ const ContentDetails: React.FC = () => {
           loadMore={() => {}}
           hasMore={hasMore}
           isLoading={isLoading}
-          sourceType={'playlist'}
+          sourceType={'playListMusicType'}
         />
       </div>
     </div>

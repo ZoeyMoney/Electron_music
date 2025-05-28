@@ -77,7 +77,7 @@ const InterMusicTable: React.FC = () => {
             loadMore={throttledFetchNextPage}
             hasMore={hasNextPage || false}
             isLoading={isFetchingNextPage}
-            sourceType={'search'}
+            sourceType={'playListMusicType'}
           />
         </div>
       )}

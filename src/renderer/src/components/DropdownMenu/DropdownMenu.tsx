@@ -1,5 +1,4 @@
-import type React from 'react'
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { MenuItemProps, SongProps } from '@renderer/InterFace'
 
@@ -90,10 +89,12 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({
         }}
       >
         {/* 菜单头部 */}
-        <div className="px-4 py-2 border-b border-gray-700">
-          <p className="text-sm font-medium text-white truncate">{song.music_title}</p>
-          <p className="text-xs text-gray-400 truncate">{song.artist}</p>
-        </div>
+        {song.music_title && (
+          <div className="px-4 py-2 border-b border-gray-700">
+            <p className="text-sm font-medium text-white truncate">{song.music_title}</p>
+            <p className="text-xs text-gray-400 truncate">{song.artist}</p>
+          </div>
+        )}
 
         {/* 菜单项 */}
         <div className="py-1">
@@ -101,11 +102,7 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({
             const Icon = item.icon
 
             return (
-              <div
-                key={index}
-                className="relative group"
-                onMouseEnter={handleMouseEnter}
-              >
+              <div key={index} className="relative group" onMouseEnter={handleMouseEnter}>
                 <button
                   onClick={item.onClick}
                   className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm transition-all duration-150 hover:bg-gray-700 text-left ${

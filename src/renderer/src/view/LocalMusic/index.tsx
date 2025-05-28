@@ -191,14 +191,14 @@ const LocalMusic: React.FC = () => {
               data={localMusicList}
               loadMore={() => {}}
               hasMore={false}
-              sourceType={'local'}
+              sourceType={'localMusicList'}
               showAlbum={true}
               showDuration={true}
             />
           </div>
         ) : (
           <div className={'flex justify-center items-center flex-col'}>
-            <Lottie animationData={animationData} loop={true} style={{ width: 200, height: 200 }} />
+            <Lottie animationData={animationData} loop={true} style={{ width: 300, height: 300 }} />
             <Button color={'danger'} onPress={() => handleOpenMusicClick()}>
               添加音乐
             </Button>
