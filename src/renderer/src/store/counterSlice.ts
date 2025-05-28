@@ -36,7 +36,7 @@ const initialState: RootState = {
     lrc: '无歌词',
     id: '',
   },
-  sort: 'asc', //排序
+  downloadPath: null, //下载地址
 }
 
 export const counterSlice = createSlice({
@@ -49,15 +49,15 @@ export const counterSlice = createSlice({
     },
     //保存自建歌单的歌曲
     setMyLikeMusicList: (state, action: PayloadAction<any>) => {
-      const { type, song, id } = action.payload
-      console.log(type,song,id);
+      const { type, data, id } = action.payload
+      console.log(data)
       if (type === 'add'){
         //根据id进行添加
         state.myLikeMusic = state.myLikeMusic.map(item=> {
           if (item.id === id) {
             return {
               ...item,
-              songs: [...item.songs, song]
+              songs: [...item.songs, data]
             }
           }
           return item
@@ -68,7 +68,7 @@ export const counterSlice = createSlice({
           if (item.id === id){
             return {
               ...item,
-              songs: item.songs.filter((item: any) => item.href !== song.href)
+              songs: item.songs.filter((item: any) => item.href !== data.href)
             }
           }
           return item
@@ -119,9 +119,9 @@ export const counterSlice = createSlice({
       console.log(state.menuDataType,action.payload,'sta')
       state.menuDataType = action.payload
     },
-    //更改排序问题
-    setSort: (state, action: PayloadAction<any>) => {
-      state.sort = action.payload
+    //设置下载地址
+    setDownloadPath: (state, action: PayloadAction<any>) => {
+      state.downloadPath = action.payload
     }
   }
 });
@@ -137,6 +137,6 @@ export const {
   setMusicLocalDataList, //添加本地音乐
   removeMusicLocalDataList, // 删除本地音乐
   setMenuDataType, // 更改播放类型
-  setSort, //  更改排序问题
+  setDownloadPath, //设置下载地址
 } = counterSlice.actions;
 export default counterSlice.reducer;

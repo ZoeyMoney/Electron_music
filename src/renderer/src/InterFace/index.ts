@@ -20,7 +20,6 @@ export interface ViewMoreProps {
 
 //仓库
 export interface SongProps {
-  index?: number
   music_title: string
   artist?: string
   href: string
@@ -39,7 +38,13 @@ export interface MyLikeMusicList {
   name: string
   index?: number
   key: string
-  songs: SongProps[]
+  songs: {
+    artist: string
+    href: string
+    date: string
+    music_title: string
+    id: string
+  }[]
 }
 
 // 定义模态框状态
@@ -60,8 +65,7 @@ export interface RootState {
   historyPlayList: SongProps[]
   //本地音乐
   localMusicList: LocalMusicInfo[]
-  //排序问题
-  sort: 'asc' | 'desc'
+  downloadPath: string | null //下载地址
 }
 
 //播放歌单

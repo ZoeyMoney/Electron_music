@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
 import { addToast, Select, SelectItem, Switch } from '@heroui/react'
 import { SettingDataProps } from '@renderer/InterFace'
-
+import FolderSelector from '@renderer/components/FolderSelector'
 
 const SettingMusic: React.FC = () => {
   //代理存储
   const [proxySetting, setProxySetting] = useState<string>('AutoSetting')
+  // const { downloadPath } = useSelector((state: RootState) => state.counter)
   // 开机启动
   const handleSelectChange = (): void => {
     addToast({
@@ -69,12 +70,9 @@ const SettingMusic: React.FC = () => {
           component: <Switch defaultSelected={false} color="success" />
         },
         {
-          label: '默认位置',
+          label: '默认下载位置',
           component: (
-            <div className={'w-[400px]'}>
-              {/*<Input type={'file'} directory={'true'} placeholder={'一定要默认位置'} />*/}
-              {/*<input type={'file'} nwdirectory directory placeholder={'歌曲默认下载位置'} />*/}
-            </div>
+            <FolderSelector placeholder="选择歌曲下载文件夹" />
           )
         }
       ]

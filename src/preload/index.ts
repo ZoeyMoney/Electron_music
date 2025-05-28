@@ -7,6 +7,7 @@ const api = {
   minimizeApp: (): void => ipcRenderer.send('minimize-app'), //最小化
   selectMusicFolder: () => ipcRenderer.invoke('select-music-file'), //选择文件夹
   getAudioDuration: (filePath: string): Promise<number> => ipcRenderer.invoke('get-audio-duration', filePath), // 获取音频时长
+  selectDownloadFolder: () => ipcRenderer.invoke('select-download-music-folder'),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

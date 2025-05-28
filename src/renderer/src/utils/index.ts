@@ -541,14 +541,6 @@ export const getCommonMenuItems = (
   return [
     addToPlaylistMenu,
     {
-      icon: Download,
-      label: '下载',
-      onClick: () => {
-        console.log('下载:', song.music_title)
-        onClose()
-      }
-    },
-    {
       icon: Share,
       label: '分享',
       onClick: () => {
@@ -558,14 +550,27 @@ export const getCommonMenuItems = (
     }
   ]
 }
-//  菜单项
+//  网络菜单项
 export const getMenuItems = (
   song: SongProps,
   onClose: () => void,
   onAddToPlaylist: (song: SongProps, playlistId: number | string) => void,
-  sourceType: 'playListMusicType' | 'allMusicList' | 'localMusicList' | string | '1'
+  sourceType: 'playListMusicType' | 'allMusicList' | 'localMusicList' | string | '1',
+  callbacks?: {
+    onDownload?: (song: SongProps) => void
+  }
 ): MenuItemProps[] => {
-  return getCommonMenuItems(song, onClose, onAddToPlaylist, sourceType)
+  return [
+    ...getCommonMenuItems(song, onClose, onAddToPlaylist, sourceType),
+    {
+      icon: Download,
+      label: '下载',
+      onClick: () => {
+        callbacks?.onDownload?.(song)
+        onClose()
+      }
+    },
+  ]
 }
 // 本地音乐菜单项
 export const getLocalMenuItems = (
@@ -645,3 +650,26 @@ export const useDropdownMenu = ({ initialMenuType = '' }: UseDropdownMenuProps):
     selectedItem
   }
 }
+/*排序 默认asc */
+export const sortByDate = <T extends { date: string }>(
+  list: T[],
+  order: 'asc' | 'desc' = 'asc'
+): T[] => {
+  // 拷贝一份，避免修改原数组
+  const arr = [...list];
+
+  arr.sort((a, b) => {
+    // 把 ISO 字符串转换为时间戳
+    const ta = Date.parse(a.date);
+    const tb = Date.parse(b.date);
+
+    // 升序：时间戳小的在前；降序反过来
+    if (order === 'asc') {
+      return ta - tb;
+    } else {
+      return tb - ta;
+    }
+  });
+
+  return arr;
+};

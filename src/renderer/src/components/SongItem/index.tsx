@@ -16,6 +16,8 @@ import {
 import DropdownMenu from "@renderer/components/DropdownMenu/DropdownMenu"
 import { setMyLikeMusicList } from '@renderer/store/counterSlice'
 import { ModalWrapper } from '@renderer/components/ModalWrapper'
+import { useNavigate } from 'react-router-dom'
+import { addToast } from '@heroui/react'
 
 interface SongItemProps {
   item: LocalMusicInfo // 单个歌曲数据
@@ -34,7 +36,7 @@ export const SongItem: React.FC<SongItemProps> = ({
   showAlbum = false,
   showDuration = false
 }) => {
-  const { myLikeMusic, audioState, playInfo } = useSelector((state: RootState) => state.counter)
+  const { myLikeMusic, audioState, playInfo, downloadPath } = useSelector((state: RootState) => state.counter)
   const [isHovered, setIsHovered] = useState(false)
   const [showPlay, setShowPlay] = useState(false)
   const { createDoubleClickHandler } = useHandleDoubleClickPlay()
@@ -51,7 +53,9 @@ export const SongItem: React.FC<SongItemProps> = ({
     handleMoreClick,
     handleContextMenu,
   } = useDropdownMenu({ initialMenuType: '' })
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false)
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   // 检查歌曲是否已点赞
   const isLiked = useMemo(
     () =>
@@ -73,14 +77,19 @@ export const SongItem: React.FC<SongItemProps> = ({
     groupId: string | number = 1,
     forceAdd: boolean = false // 强制添加
   ): Promise<void> => {
+    if (!song || !song.href) {
+      console.warn('传入的 song 无效', song)
+      return
+    }
     const alreadyLiked = isLiked(song.href)
+    const data = { ...song, date: new Date().toISOString() }
     if (alreadyLiked && !forceAdd) {
       // 取消点赞
       dispatch(
         setMyLikeMusicList({
           type: 'remove',
           id: groupId,
-          song
+          data
         })
       )
     } else {
@@ -89,7 +98,7 @@ export const SongItem: React.FC<SongItemProps> = ({
         setMyLikeMusicList({
           type: 'add',
           id: groupId,
-          song
+          data
         })
       )
     }
@@ -128,7 +137,19 @@ export const SongItem: React.FC<SongItemProps> = ({
   //选择菜单
   const menuItems = isLocalSong
     ? getLocalMenuItems(item, () => setShowMenu(false), handleAddToPlaylist, sourceType)
-    : getMenuItems(item, () => setShowMenu(false), handleAddToPlaylist, sourceType)
+    : getMenuItems(item, () => setShowMenu(false), handleAddToPlaylist, sourceType, {
+        onDownload: (song) => {
+          if (downloadPath === null) {
+            setDownloadModalOpen(true)
+          }
+          console.log(song)
+          addToast({
+            title: `还未开始做`,
+            timeout: 2000,
+            color: 'success'
+          })
+        }
+      })
 
   const isCurrentlyPlaying = audioState.isPlaying && playInfo.id === item.id
   return (
@@ -232,6 +253,17 @@ export const SongItem: React.FC<SongItemProps> = ({
         buttonCloseText={'请勿添加'}
       >
         <p>{modalState.content}</p>
+      </ModalWrapper>
+      {/* 下载modal */}
+      <ModalWrapper
+        title={'提示'}
+        isOpen={downloadModalOpen}
+        onClose={() => setDownloadModalOpen(false)}
+        onAction={() => navigate('/SettingMusic')}
+        actionText={'前往'}
+        buttonCloseText={'取消'}
+      >
+        <p>没有设置下载路径，请先设置路径在进行下载。</p>
       </ModalWrapper>
     </div>
   )

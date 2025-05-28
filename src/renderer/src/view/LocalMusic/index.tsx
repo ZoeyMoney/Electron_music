@@ -32,7 +32,6 @@ const LocalMusic: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false)
   const [musicList, setMusicList] = useState<LocalMusicInfo[]>([])
   const dispatch = useDispatch()
-  console.log(localMusicList,'555')
   // 过滤添加歌曲
   const [isFilter, setIsFilter] = useState<boolean>(false)
   // 打开模态框

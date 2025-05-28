@@ -144,3 +144,15 @@ ipcMain.handle('get-audio-duration', async (_, filePath) => {
     return 0;
   }
 });
+
+//选择文件夹
+ipcMain.handle('select-download-music-folder', async () => {
+  //选择文件夹路径
+  const result = await dialog.showOpenDialog({
+    title: '选择下载保存的文件',
+    properties: ['openDirectory'],
+    buttonLabel: '选择此文件夹'
+  })
+  if (result.canceled) return null
+  return result.filePaths[0]
+})
