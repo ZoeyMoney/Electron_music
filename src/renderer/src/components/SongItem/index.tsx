@@ -6,6 +6,7 @@ import LikeButton from "@renderer/components/LikeButton"
 import { useDispatch, useSelector } from 'react-redux'
 import type { RootState } from "@renderer/store/store"
 import {
+  createSongInfo,
   getAlbumColor,
   getInitials,
   getLocalMenuItems,
@@ -139,15 +140,52 @@ export const SongItem: React.FC<SongItemProps> = ({
     ? getLocalMenuItems(item, () => setShowMenu(false), handleAddToPlaylist, sourceType)
     : getMenuItems(item, () => setShowMenu(false), handleAddToPlaylist, sourceType, {
         onDownload: (song) => {
+          console.log(song,'songs')
           if (downloadPath === null) {
             setDownloadModalOpen(true)
           }
-          console.log(song)
-          addToast({
-            title: `还未开始做`,
-            timeout: 2000,
-            color: 'success'
-          })
+          //获取下载地址
+          createSongInfo(song).then(async (res) => {
+            const url = res.data.mp3_url;
+            if (!url) {
+              addToast({ title: '无下载链接', timeout: 2000, color: 'danger' });
+              return;
+            }
+
+            const sanitize = (str: string): string => str.replace(/[/\\:*?"<>|]/g, '_');
+            const filename = `${sanitize(song.artist || 'unknown_artist')} - ${sanitize(song.music_title || 'unknown_title')}.mp3`;
+            console.log(filename, 'filename');
+
+            try {
+              const response = await fetch(url);
+              if (!response.ok) throw new Error('网络错误');
+
+              const blob = await response.blob();
+              const blobUrl = URL.createObjectURL(blob);
+
+              const link = document.createElement('a');
+              link.href = blobUrl;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+
+              URL.revokeObjectURL(blobUrl);
+
+              addToast({
+                title: '下载开始',
+                timeout: 2000,
+                color: 'success',
+              });
+            } catch (error) {
+              addToast({
+                title: '下载失败',
+                timeout: 2000,
+                color: 'danger',
+              });
+              console.error(error);
+            }
+          });
         }
       })
 

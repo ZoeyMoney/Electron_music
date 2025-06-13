@@ -5,7 +5,9 @@ import icon from '../../resources/icon.png?asset'
 import { parseFile } from 'music-metadata'
 import fs from 'fs'
 import path from 'node:path'
+import { autoUpdater } from 'electron-updater'
 
+autoUpdater.autoDownload = true // 自动下载更新
 let mainWindow: BrowserWindow | null = null
 function createWindow(): void {
   // Create the browser window.
@@ -155,4 +157,24 @@ ipcMain.handle('select-download-music-folder', async () => {
   })
   if (result.canceled) return null
   return result.filePaths[0]
+})
+
+// 自动更新代码
+autoUpdater.on('update-available', () => {
+  console.log('🔍 有新版本可用，准备下载...')
+})
+autoUpdater.on('update-downloaded', () => {
+  dialog.showMessageBox({
+      type: 'info',
+      title: '更新提示',
+      message: '新版本已发布，是否立即安装？',
+      buttons: ['立即安装', '取消'],
+    }).then(res => {
+      if (res.response === 0) {
+        autoUpdater.quitAndInstall()
+      }
+    })
+})
+app.whenReady().then(() => {
+  autoUpdater.checkForUpdates()
 })

@@ -13,21 +13,24 @@ const PlayerTitle: React.FC = () => {
   const lottieRef = useRef<LottieRefCurrentProps | null>(null)
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { playInfo, audioState } = useSelector((state: RootState) => state.counter)
-
-  const lyrics = parseLyrics(playInfo.lrc)
+  console.log(playInfo)
+  const lyrics = parseLyrics(playInfo?.lrc || '')
   const [currentIndex, setCurrentIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // 根据 currentTime 找到当前歌词索引
   useEffect(() => {
+    if (!audioState || typeof audioState.currentTime !== 'number') return;
+
     const idx = lyrics.findIndex((line, i) => {
-      const nextTime = lyrics[i + 1]?.time ?? Infinity
-      return audioState.currentTime >= line.time && audioState.currentTime < nextTime
-    })
+      const nextTime = lyrics[i + 1]?.time ?? Infinity;
+      return audioState.currentTime >= line.time && audioState.currentTime < nextTime;
+    });
+
     if (idx !== -1 && idx !== currentIndex) {
-      setCurrentIndex(idx)
+      setCurrentIndex(idx);
     }
-  }, [audioState.currentTime, lyrics, currentIndex])
+  }, [audioState.currentTime, lyrics, currentIndex, audioState]);
 
   // 滚动歌词，使当前句居中显示
   useEffect(() => {
