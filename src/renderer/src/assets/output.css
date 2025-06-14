@@ -1122,6 +1122,10 @@ video {
   margin-top: 0.75rem;
 }
 
+.mt-4 {
+  margin-top: 1rem;
+}
+
 .mt-5 {
   margin-top: 1.25rem;
 }
@@ -1395,6 +1399,14 @@ video {
   height: 100vh;
 }
 
+.h-\[20px\] {
+  height: 20px;
+}
+
+.h-\[25px\] {
+  height: 25px;
+}
+
 .max-h-\[20rem\] {
   max-height: 20rem;
 }
@@ -1639,6 +1651,10 @@ video {
   width: 80%;
 }
 
+.w-\[80px\] {
+  width: 80px;
+}
+
 .w-\[90\%\] {
   width: 90%;
 }
@@ -1687,6 +1703,22 @@ video {
 
 .w-screen {
   width: 100vw;
+}
+
+.w-\[20px\] {
+  width: 20px;
+}
+
+.w-\[40px\] {
+  width: 40px;
+}
+
+.w-\[30px\] {
+  width: 30px;
+}
+
+.w-\[25px\] {
+  width: 25px;
 }
 
 .min-w-0 {
@@ -3710,6 +3742,10 @@ video {
   line-height: 2rem;
 }
 
+.text-\[\#14px\] {
+  font-size: #14px;
+}
+
 .text-\[0\.55rem\] {
   font-size: 0.55rem;
 }
@@ -4003,6 +4039,11 @@ video {
 .text-green-400 {
   --tw-text-opacity: 1;
   color: rgb(74 222 128 / var(--tw-text-opacity, 1));
+}
+
+.text-green-600 {
+  --tw-text-opacity: 1;
+  color: rgb(22 163 74 / var(--tw-text-opacity, 1));
 }
 
 .text-inherit {
@@ -6210,6 +6251,10 @@ body {
   cursor: pointer;
 }
 
+.hover\:\!cursor-pointer:hover {
+  cursor: pointer !important;
+}
+
 .hover\:border-danger:hover {
   --tw-border-opacity: 1;
   border-color: hsl(var(--heroui-danger) / var(--heroui-danger-opacity, var(--tw-border-opacity)));
@@ -6582,6 +6627,10 @@ body {
 
 .group:hover .group-hover\:hidden {
   display: none;
+}
+
+.group:hover .group-hover\:cursor-pointer {
+  cursor: pointer;
 }
 
 .group:hover .group-hover\:border-current {

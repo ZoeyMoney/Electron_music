@@ -1,10 +1,13 @@
 import React, { useRef } from 'react'
-import { addToast, Button, Input } from '@heroui/react'
+import { addToast, Button, Input, Tooltip } from '@heroui/react'
 import { BiHome } from 'react-icons/bi'
 import { useNavigate } from 'react-router-dom'
 import { LuSearch } from 'react-icons/lu'
 import { LuMinus } from 'react-icons/lu'
 import { IoClose } from 'react-icons/io5'
+import { ArrowDownToLine } from 'lucide-react'
+import { buildStyles, CircularProgressbarWithChildren } from 'react-circular-progressbar'
+import 'react-circular-progressbar/dist/styles.css'
 
 const HeaderSearch: React.FC = () => {
   const navigate = useNavigate()
@@ -39,11 +42,7 @@ const HeaderSearch: React.FC = () => {
     <div className="h-[50px] pl-[14px] flex items-center [-webkit-app-region:drag]">
       <div className="flex justify-between w-full">
         <div className="flex-grow-[2] flex items-center">
-          <Button
-            isIconOnly
-            aria-label="Like"
-            className="[-webkit-app-region:no-drag]"
-          >
+          <Button isIconOnly aria-label="Like" className="[-webkit-app-region:no-drag]">
             <BiHome size={20} onClick={() => navigate('/')} />
           </Button>
         </div>
@@ -63,6 +62,21 @@ const HeaderSearch: React.FC = () => {
         </div>
 
         <div className="right flex-grow-[2] flex justify-end items-center space-x-2">
+          <div className={'w-[25px] h-[25px] cursor-pointer [-webkit-app-region:no-drag]'}>
+            <Tooltip content="下载中心" showArrow>
+              <div>
+                <CircularProgressbarWithChildren
+                  value={66}
+                  maxValue={100}
+                  styles={buildStyles({
+                    pathColor: '#22c55e'
+                  })}
+                >
+                  <ArrowDownToLine size={14} color="white" />
+                </CircularProgressbarWithChildren>
+              </div>
+            </Tooltip>
+          </div>
           <div
             onClick={minimizeChange}
             className="h-[50px] flex items-center justify-center w-10 cursor-pointer text-center hover:bg-[#414141b0] [-webkit-app-region:no-drag]"

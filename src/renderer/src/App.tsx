@@ -18,12 +18,12 @@ function App(): JSX.Element {
   useEffect(() => {
     if (!window.api) return
 
-    const handleUpdateAvailable = () => {
+    const handleUpdateAvailable = (): void => {
       setHasUpdate(true)
       setDownloadModalOpen(true)
     }
 
-    const handleUpdateProgress = (data: { percent: number }) => {
+    const handleUpdateProgress = (data: { percent: number }): void => {
       const percent = Number(data.percent.toFixed(2))
       setProgress(percent)
       setIsDownloading(true)
@@ -34,7 +34,7 @@ function App(): JSX.Element {
       }
     }
 
-    const handleUpdateDownloaded = () => {
+    const handleUpdateDownloaded = (): void => {
       setIsDownloading(false)
       setIsDownloaded(true)
       setProgress(100)
@@ -73,7 +73,7 @@ function App(): JSX.Element {
     return () => clearInterval(timer)
   }, [isInstalling])
 
-  const handleAction = () => {
+  const handleAction = (): void => {
     if (isInstalling || isDownloading) return
 
     if (hasUpdate && !isDownloaded) {
@@ -94,7 +94,7 @@ function App(): JSX.Element {
     }
   }
 
-  const getModalContent = () => {
+  const getModalContent = (): JSX.Element | null => {
     if (isInstalling) {
       return <p>正在安装更新，请稍候...</p> // ✅ 保留提示即可，不要再有进度条
     }
