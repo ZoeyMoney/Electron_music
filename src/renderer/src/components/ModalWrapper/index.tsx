@@ -11,6 +11,7 @@ interface ModalWrapperProps {
   buttonSize?: 'sm' | 'md' | 'lg'
   buttonCloseText?: string //关闭按钮
   modalSize?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full'
+  autoCloseOnAction?: boolean
 }
 
 export const ModalWrapper: React.FC<ModalWrapperProps> = ({
@@ -22,7 +23,8 @@ export const ModalWrapper: React.FC<ModalWrapperProps> = ({
   actionText,
   buttonSize = 'sm',
   buttonCloseText = '关闭',
-  modalSize
+  modalSize,
+  autoCloseOnAction = true,
 }) => {
   return (
     <Modal
@@ -48,7 +50,7 @@ export const ModalWrapper: React.FC<ModalWrapperProps> = ({
                   size={buttonSize}
                   onPress={() => {
                     onAction?.()
-                    closeModal()
+                    if (autoCloseOnAction) closeModal()
                   }}
                 >
                   {actionText}

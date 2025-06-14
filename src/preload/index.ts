@@ -5,15 +5,12 @@ import { electronAPI } from '@electron-toolkit/preload'
 const api = {
   quitApp: (): void => ipcRenderer.send('quit-app'), // 向主进程发送退出应用的事件
   minimizeApp: (): void => ipcRenderer.send('minimize-app'), //最小化
-  onUpdateProgress: (callback: (data: any) => void) => {
-    ipcRenderer.on('update-download-progress', (_, data) => callback(data));
-  },
-  onUpdateDownloaded: (callback: () => void) => {
-    ipcRenderer.on('update-downloaded', callback);
-  },
-  installUpdate: () => {
-    ipcRenderer.send('install-update')
-  }
+  onUpdateAvailable: (callback) => ipcRenderer.on('update-available', callback),
+  onUpdateProgress: (callback) => ipcRenderer.on('update-progress', (_, data) => callback(data)),
+  onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', callback),
+  removeListener: (channel, callback) => ipcRenderer.removeListener(channel, callback),
+  downloadUpdate: () => ipcRenderer.send('download-update'),
+  installUpdate: () => ipcRenderer.send('install-update'),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

@@ -17,7 +17,7 @@ log.transports.file.level = 'info'
 // 关联 autoUpdater 日志输出
 autoUpdater.logger = log
 
-autoUpdater.autoDownload = true // 自动下载更新
+autoUpdater.autoDownload = false // 自动下载更新
 let mainWindow: BrowserWindow | null = null
 function createWindow(): void {
   // Create the browser window.
@@ -67,7 +67,8 @@ function createWindow(): void {
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
-
+  //自动检测更新
+  autoUpdater.checkForUpdates()
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
@@ -170,18 +171,27 @@ ipcMain.handle('select-download-music-folder', async () => {
 })
 
 // 自动更新代码
-autoUpdater.on('download-progress', (progressObj) => {
-  const percent = progressObj.percent.toFixed(2)
-  log.info(`Download speed: ${progressObj.bytesPerSecond}`)
-  log.info(`Downloaded ${progressObj.transferred} of ${progressObj.total}`)
-  log.info(`Progress: ${percent}%`)
+// 2. 检测到更新，仅通知渲染进程
+autoUpdater.on('update-available', () => {
+  mainWindow?.webContents.send('update-available') // 你可能需要根据你的窗口引用更改
+})
 
-  // 发送到前端
-  mainWindow?.webContents.send('update-download-progress', progressObj)
+// 3. 下载进度
+autoUpdater.on('download-progress', (progressObj) => {
+  mainWindow?.webContents.send('update-progress', { percent: progressObj.percent })
 })
+
+// 4. 下载完成
 autoUpdater.on('update-downloaded', () => {
-  mainWindow?.webContents.send('update-downloaded') // 通知前端展示自定义更新提示
+  mainWindow?.webContents.send('update-downloaded')
 })
+
+// 5. 渲染进程请求下载更新
+ipcMain.on('download-update', () => {
+  autoUpdater.downloadUpdate()
+})
+
+// 6. 安装更新
 ipcMain.on('install-update', () => {
   autoUpdater.quitAndInstall()
 })
