@@ -1,6 +1,6 @@
 {
   "name": "electron_music",
-  "version": "1.0.1",
+  "version": "1.0.6",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -22,7 +22,7 @@
     "wincss:watch": "npx tailwindcss -i ./src/renderer/src/assets/main.css -o ./src/renderer/src/assets/output.css --watch"
   },
   "build": {
-    "appId": "com.example.musicplayer",
+    "appId": "1984898516@qq.com",
     "productName": "聆听音乐",
     "directories": {
       "output": "dist"
@@ -36,12 +36,14 @@
           ]
         }
       ],
-      "icon": "resources/icon.ico"
+      "icon": "resources/icon.ico",
+      "artifactName": "Setup-${version}.exe"
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "聆听音乐"
@@ -53,7 +55,8 @@
       {
         "provider": "github",
         "owner": "ZoeyMoney",
-        "repo": "Electron_music"
+        "repo": "Electron_music",
+        "releaseType": "release"
       }
     ]
   },
@@ -67,6 +70,7 @@
     "@tanstack/react-query-persist-client": "^5.77.2",
     "axios": "^1.9.0",
     "colorthief": "^2.6.0",
+    "electron-log": "^5.4.1",
     "electron-updater": "^6.6.2",
     "framer-motion": "^12.5.0",
     "lottie-react": "^2.4.1",

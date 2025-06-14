@@ -6,6 +6,16 @@ import { parseFile } from 'music-metadata'
 import fs from 'fs'
 import path from 'node:path'
 import { autoUpdater } from 'electron-updater'
+import log from 'electron-log'
+
+// 设置日志文件路径
+log.transports.file.resolvePath = () => path.join(app.getPath('userData'), 'logs/main.log')
+
+// 设置日志等级
+log.transports.file.level = 'info'
+
+// 关联 autoUpdater 日志输出
+autoUpdater.logger = log
 
 autoUpdater.autoDownload = true // 自动下载更新
 let mainWindow: BrowserWindow | null = null
@@ -160,21 +170,18 @@ ipcMain.handle('select-download-music-folder', async () => {
 })
 
 // 自动更新代码
-autoUpdater.on('update-available', () => {
-  console.log('🔍 有新版本可用，准备下载...')
+autoUpdater.on('download-progress', (progressObj) => {
+  const percent = progressObj.percent.toFixed(2)
+  log.info(`Download speed: ${progressObj.bytesPerSecond}`)
+  log.info(`Downloaded ${progressObj.transferred} of ${progressObj.total}`)
+  log.info(`Progress: ${percent}%`)
+
+  // 发送到前端
+  mainWindow?.webContents.send('update-download-progress', progressObj)
 })
 autoUpdater.on('update-downloaded', () => {
-  dialog.showMessageBox({
-      type: 'info',
-      title: '更新提示',
-      message: '新版本已发布，是否立即安装？',
-      buttons: ['立即安装', '取消'],
-    }).then(res => {
-      if (res.response === 0) {
-        autoUpdater.quitAndInstall()
-      }
-    })
+  mainWindow?.webContents.send('update-downloaded') // 通知前端展示自定义更新提示
 })
-app.whenReady().then(() => {
-  autoUpdater.checkForUpdates()
+ipcMain.on('install-update', () => {
+  autoUpdater.quitAndInstall()
 })

@@ -135,7 +135,7 @@ export const SongItem: React.FC<SongItemProps> = ({
   }
   //判断本地或者在线
   const isLocalSong = item.localPath === true;
-  //选择菜单
+  //选择菜单 下载
   const menuItems = isLocalSong
     ? getLocalMenuItems(item, () => setShowMenu(false), handleAddToPlaylist, sourceType)
     : getMenuItems(item, () => setShowMenu(false), handleAddToPlaylist, sourceType, {
