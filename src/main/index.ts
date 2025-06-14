@@ -38,7 +38,7 @@ function createWindow(): void {
       sandbox: false,
       nodeIntegration: true,
       webSecurity: process.env.NODE_ENV === 'production',
-      contextIsolation: false
+      contextIsolation: true,
     }
   })
 
