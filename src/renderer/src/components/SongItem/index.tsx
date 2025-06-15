@@ -37,7 +37,7 @@ export const SongItem: React.FC<SongItemProps> = ({
   showAlbum = false,
   showDuration = false
 }) => {
-  const { myLikeMusic, audioState, playInfo } = useSelector((state: RootState) => state.counter)
+  const { myLikeMusic, audioState, playInfo, downloadPath } = useSelector((state: RootState) => state.counter)
   const [isHovered, setIsHovered] = useState(false)
   const [showPlay, setShowPlay] = useState(false)
   const { createDoubleClickHandler } = useHandleDoubleClickPlay()
@@ -140,6 +140,10 @@ export const SongItem: React.FC<SongItemProps> = ({
     ? getLocalMenuItems(item, () => setShowMenu(false), handleAddToPlaylist, sourceType)
     : getMenuItems(item, () => setShowMenu(false), handleAddToPlaylist, sourceType, {
         onDownload: (song) => {
+          if (downloadPath === null) {
+            setDownloadModalOpen(true)
+            return
+          }
           dispatch(addDownloadList(song))
           /*console.log(song,'songs')
           if (downloadPath === null) {

@@ -13,6 +13,7 @@ const api = {
   installUpdate: () => ipcRenderer.send('install-update'),
   selectMusicFolder: () => ipcRenderer.invoke('select-music-file'), //选择文件夹
   getAudioDuration: (filePath: string): Promise<number> => ipcRenderer.invoke('get-audio-duration', filePath), // 获取音频时长
+  selectDownloadFolder: () => ipcRenderer.invoke('select-download-music-folder'), //选择文件夹路径
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
