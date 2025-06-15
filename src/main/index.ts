@@ -9,8 +9,7 @@ import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 
 // 设置日志文件路径
-log.transports.file.resolvePath = () => path.join(app.getPath('userData'), 'logs/main.log')
-
+log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'logs/main.log')
 // 设置日志等级
 log.transports.file.level = 'info'
 
@@ -158,7 +157,7 @@ ipcMain.handle('get-audio-duration', async (_, filePath) => {
   }
 });
 
-//选择文件夹
+//选择下载路径的文件夹
 ipcMain.handle('select-download-music-folder', async () => {
   //选择文件夹路径
   const result = await dialog.showOpenDialog({

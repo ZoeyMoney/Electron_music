@@ -8,7 +8,7 @@ const initialState: RootState = {
       id: 1,
       name: '我喜欢',
       key: 'MyLike',
-      songs: [],
+      songs: []
     }
   ],
   //播放清单 - 歌单
@@ -22,7 +22,7 @@ const initialState: RootState = {
     random: false, // 默认不随机播放
     playbackRate: 1.0, // 默认播放速度正常
     duration: 0, //总时长
-    isPlaying: false, // 播放状态
+    isPlaying: false // 播放状态
   },
   localMusicList: [], //本地音乐
   historyPlayList: [], //历史播放
@@ -34,9 +34,11 @@ const initialState: RootState = {
     href: '',
     pic: '',
     lrc: '无歌词',
-    id: '',
+    id: ''
   },
   downloadPath: null, //下载地址
+  downloadList: [], //下载中的音乐列表
+  downloadFinishList: [] // 下载完成音乐列表
 }
 
 export const counterSlice = createSlice({
@@ -45,15 +47,15 @@ export const counterSlice = createSlice({
   reducers: {
     // 我喜欢的音乐
     setMyLikeMusic: (state, action: PayloadAction<any>) => {
-      state.myLikeMusic.push(action.payload);
+      state.myLikeMusic.push(action.payload)
     },
     //保存自建歌单的歌曲
     setMyLikeMusicList: (state, action: PayloadAction<any>) => {
       const { type, data, id } = action.payload
       console.log(data)
-      if (type === 'add'){
+      if (type === 'add') {
         //根据id进行添加
-        state.myLikeMusic = state.myLikeMusic.map(item=> {
+        state.myLikeMusic = state.myLikeMusic.map((item) => {
           if (item.id === id) {
             return {
               ...item,
@@ -64,8 +66,8 @@ export const counterSlice = createSlice({
         })
       } else if (type === 'remove') {
         //根据id进行删除数据
-        state.myLikeMusic = state.myLikeMusic.map(item=> {
-          if (item.id === id){
+        state.myLikeMusic = state.myLikeMusic.map((item) => {
+          if (item.id === id) {
             return {
               ...item,
               songs: item.songs.filter((item: any) => item.href !== data.href)
@@ -103,28 +105,33 @@ export const counterSlice = createSlice({
     //添加本地歌曲
     setMusicLocalDataList: (state, action: PayloadAction<LocalMusicInfo[]>) => {
       if (!Array.isArray(state.localMusicList)) {
-        console.warn('state.MusicDataList is not an array, resetting to empty array');
-        state.localMusicList = [];
+        console.warn('state.MusicDataList is not an array, resetting to empty array')
+        state.localMusicList = []
       }
-      state.localMusicList = [...state.localMusicList, ...action.payload];
+      state.localMusicList = [...state.localMusicList, ...action.payload]
     },
     //删除本地歌曲
     removeMusicLocalDataList: (state, action: PayloadAction<string>) => {
       state.localMusicList = state.localMusicList.filter(
         (item) => !action.payload.includes(item.id)
-      );
+      )
     },
     //更改播放类型
     setMenuDataType: (state, action: PayloadAction<any>) => {
-      console.log(state.menuDataType,action.payload,'sta')
+      console.log(state.menuDataType, action.payload, 'sta')
       state.menuDataType = action.payload
     },
     //设置下载地址
     setDownloadPath: (state, action: PayloadAction<any>) => {
       state.downloadPath = action.payload
+    },
+    // 添加下载列表
+    addDownloadList: (state, action: PayloadAction<any>) => {
+      console.log(action.payload, 'addDownloadList')
+      state.downloadList.push(action.payload)
     }
   }
-});
+})
 
 export const {
   setMyLikeMusic, //设置自建歌单
@@ -138,5 +145,6 @@ export const {
   removeMusicLocalDataList, // 删除本地音乐
   setMenuDataType, // 更改播放类型
   setDownloadPath, //设置下载地址
-} = counterSlice.actions;
-export default counterSlice.reducer;
+  addDownloadList //添加下载列表
+} = counterSlice.actions
+export default counterSlice.reducer

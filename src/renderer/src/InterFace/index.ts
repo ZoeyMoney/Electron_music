@@ -9,15 +9,6 @@ export interface menuDataProps {
   list: menuListProps[]
 }
 
-
-//推荐音乐列表
-export interface ViewMoreProps {
-  url_href: string
-  name: string
-  pic: string
-  id?: string
-}
-
 //仓库
 export interface SongProps {
   music_title: string
@@ -65,7 +56,11 @@ export interface RootState {
   historyPlayList: SongProps[]
   //本地音乐
   localMusicList: LocalMusicInfo[]
-  downloadPath: string | null //下载地址
+  downloadPath: string | null //下载保存的地址
+  // 下载中的音乐数据列表
+  downloadList: DownloadSongProps[]
+  // 下载完成音乐的列表
+  downloadFinishList: DownloadSongProps[]
 }
 
 //播放歌单
@@ -125,4 +120,14 @@ export interface MenuItemProps {
 //右键菜单那封装
 export interface UseDropdownMenuProps {
   initialMenuType?: string
+}
+
+/* 下载的歌曲 */
+export interface DownloadSongProps {
+  artist: string //歌手
+  href: string //歌曲链接
+  id: string //歌曲id
+  music_title: string //歌曲名称
+  pic?: string //歌曲图片
+  mp3_url?: string //歌曲mp3链接
 }

@@ -11,6 +11,8 @@ const api = {
   removeListener: (channel, callback) => ipcRenderer.removeListener(channel, callback),
   downloadUpdate: () => ipcRenderer.send('download-update'),
   installUpdate: () => ipcRenderer.send('install-update'),
+  selectMusicFolder: () => ipcRenderer.invoke('select-music-file'), //选择文件夹
+  getAudioDuration: (filePath: string): Promise<number> => ipcRenderer.invoke('get-audio-duration', filePath), // 获取音频时长
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

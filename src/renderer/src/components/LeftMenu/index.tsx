@@ -80,13 +80,13 @@ const LeftMenu: React.FC = () => {
   const MusicHandleClose = (): void => setMusicOpen(false)
   //提交删除模态框
   const onSubmitData = (): void => {
-    if (selectedPlaylist.id === 1){
+    if (selectedPlaylist.id === 1) {
       addToast({
         title: '默认歌单不能删除',
         color: 'danger',
         timeout: 2000
       })
-    }else{
+    } else {
       dispatch(deleteMyLikeMusicList({ id: selectedPlaylist.id }))
       addToast({
         title: '删除成功',
@@ -257,7 +257,8 @@ const LeftMenu: React.FC = () => {
           buttonSize={'md'}
         >
           <p className={'text-[13px]'}>
-            你确定要删除这个 [ <span className={'text-[#f31260]'}>{selectedPlaylist.name}</span> ] 歌单吗？
+            你确定要删除这个 [ <span className={'text-[#f31260]'}>{selectedPlaylist.name}</span> ]
+            歌单吗？
           </p>
           <p className={'text-[#f31260] text-[13px]'}>删除后，歌单数据将无法恢复。</p>
         </ModalWrapper>

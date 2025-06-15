@@ -6,7 +6,7 @@ import LikeButton from "@renderer/components/LikeButton"
 import { useDispatch, useSelector } from 'react-redux'
 import type { RootState } from "@renderer/store/store"
 import {
-  createSongInfo,
+  // createSongInfo,
   getAlbumColor,
   getInitials,
   getLocalMenuItems,
@@ -15,10 +15,10 @@ import {
   useHandleDoubleClickPlay
 } from '@renderer/utils'
 import DropdownMenu from "@renderer/components/DropdownMenu/DropdownMenu"
-import { setMyLikeMusicList } from '@renderer/store/counterSlice'
+import { addDownloadList, setMyLikeMusicList } from '@renderer/store/counterSlice'
 import { ModalWrapper } from '@renderer/components/ModalWrapper'
 import { useNavigate } from 'react-router-dom'
-import { addToast } from '@heroui/react'
+// import { addToast } from '@heroui/react'
 
 interface SongItemProps {
   item: LocalMusicInfo // 单个歌曲数据
@@ -37,7 +37,7 @@ export const SongItem: React.FC<SongItemProps> = ({
   showAlbum = false,
   showDuration = false
 }) => {
-  const { myLikeMusic, audioState, playInfo, downloadPath } = useSelector((state: RootState) => state.counter)
+  const { myLikeMusic, audioState, playInfo } = useSelector((state: RootState) => state.counter)
   const [isHovered, setIsHovered] = useState(false)
   const [showPlay, setShowPlay] = useState(false)
   const { createDoubleClickHandler } = useHandleDoubleClickPlay()
@@ -140,7 +140,8 @@ export const SongItem: React.FC<SongItemProps> = ({
     ? getLocalMenuItems(item, () => setShowMenu(false), handleAddToPlaylist, sourceType)
     : getMenuItems(item, () => setShowMenu(false), handleAddToPlaylist, sourceType, {
         onDownload: (song) => {
-          console.log(song,'songs')
+          dispatch(addDownloadList(song))
+          /*console.log(song,'songs')
           if (downloadPath === null) {
             setDownloadModalOpen(true)
           }
@@ -185,7 +186,7 @@ export const SongItem: React.FC<SongItemProps> = ({
               });
               console.error(error);
             }
-          });
+          });*/
         }
       })
 
