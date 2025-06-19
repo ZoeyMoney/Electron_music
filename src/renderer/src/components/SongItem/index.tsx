@@ -144,7 +144,12 @@ export const SongItem: React.FC<SongItemProps> = ({
             setDownloadModalOpen(true)
             return
           }
-          dispatch(addDownloadList(song))
+          dispatch(
+            addDownloadList({
+              ...song,
+              status: 'downloading'
+            })
+          )
           /*console.log(song,'songs')
           if (downloadPath === null) {
             setDownloadModalOpen(true)

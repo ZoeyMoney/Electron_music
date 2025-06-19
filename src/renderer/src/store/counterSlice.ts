@@ -125,10 +125,16 @@ export const counterSlice = createSlice({
     setDownloadPath: (state, action: PayloadAction<any>) => {
       state.downloadPath = action.payload
     },
-    // 添加下载列表
+    //添加下载列表
     addDownloadList: (state, action: PayloadAction<any>) => {
-      console.log(action.payload, 'addDownloadList')
       state.downloadList.push(action.payload)
+    },
+    // 删除下载列表 并且 保存到下载历史
+    deleteDownloadList: (state, action: PayloadAction<any>) => {
+      state.downloadList = state.downloadList.filter(
+        (item) => item.id !== action.payload.id
+      )
+      state.downloadFinishList.push(action.payload)
     }
   }
 })
@@ -145,6 +151,7 @@ export const {
   removeMusicLocalDataList, // 删除本地音乐
   setMenuDataType, // 更改播放类型
   setDownloadPath, //设置下载地址
-  addDownloadList //添加下载列表
+  addDownloadList, //添加下载列表
+  deleteDownloadList, // 移除下载列表
 } = counterSlice.actions
 export default counterSlice.reducer

@@ -168,6 +168,18 @@ ipcMain.handle('select-download-music-folder', async () => {
   if (result.canceled) return null
   return result.filePaths[0]
 })
+// 音乐下载默认保存地址
+ipcMain.handle('save-file', async (_event, { buffer, filename, downloadPath }) => {
+  const fullPath = path.join(downloadPath, filename)
+  try {
+    fs.mkdirSync(downloadPath, { recursive: true })
+    fs.writeFileSync(fullPath, buffer)
+    return fullPath
+  } catch (err) {
+    console.error('保存文件失败', err)
+    throw err
+  }
+})
 
 // 自动更新代码
 // 2. 检测到更新，仅通知渲染进程

@@ -130,4 +130,5 @@ export interface DownloadSongProps {
   music_title: string //歌曲名称
   pic?: string //歌曲图片
   mp3_url?: string //歌曲mp3链接
+  status?: string
 }
