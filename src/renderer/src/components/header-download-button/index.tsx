@@ -1,6 +1,6 @@
 import type React from 'react'
 import { useState, useRef, useEffect } from 'react'
-import { ArrowDownToLine, Check, Clock, Trash2, X } from 'lucide-react'
+import { ArrowDownToLine, Check, Clock, X, Loader2 } from 'lucide-react'
 import { CircularProgressbarWithChildren, buildStyles } from 'react-circular-progressbar'
 import 'react-circular-progressbar/dist/styles.css'
 import { useSelector } from 'react-redux'
@@ -13,57 +13,9 @@ const HeaderDownloadButton: React.FC = () => {
   const [isScrolling, setIsScrolling] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const scrollTimeoutRef = useRef<NodeJS.Timeout>()
-  const { downloadList } = useSelector((state: RootState) => state.counter)
-
-  // 直接在组件内管理下载状态
-  // const [downloads, setDownloads] = useState<any[]>([])
-
-  const [history, setHistory] = useState<any[]>([])
+  const { downloadList, downloadFinishList } = useSelector((state: RootState) => state.counter)
 
   const hasActiveDownloads = downloadList.some((item) => item.status === 'downloading')
-
-  // 模拟下载进度更新
-  useEffect(() => {
-    const interval = setInterval(() => {
-      /*setDownloads((prev) =>
-        prev.map((item) => {
-          if (item.status === 'downloading' && item.progress < 100) {
-            const newProgress = Math.min(item.progress + Math.random() * 4 + 1, 100)
-
-            if (newProgress >= 100) {
-              // 下载完成，直接移动到历史记录
-              const completedItem = {
-                ...item,
-                progress: 100,
-                status: 'completed' as const,
-                speed: undefined,
-                completedAt: new Date().toISOString()
-              }
-
-              // 立即移动到历史记录
-              setTimeout(() => {
-                setHistory((prevHistory) => [completedItem, ...prevHistory])
-                setDownloads((prevDownloads) => prevDownloads.filter((d) => d.id !== item.id))
-              }, 0)
-
-              return completedItem
-            }
-
-            return {
-              ...item,
-              progress: newProgress,
-              speed: `${(Math.random() * 2 + 0.5).toFixed(1)}MB/s`
-            }
-          }
-
-          return item
-        })
-      )*/
-
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [])
 
   // 处理滚动动画
   useEffect(() => {
@@ -103,7 +55,7 @@ const HeaderDownloadButton: React.FC = () => {
   // 计算整体进度
   const getOverallProgress = (): number => {
     if (downloadList.length === 0) return 0
-    const totalProgress = downloadList.reduce((sum, item) => sum + item.progress, 0)
+    const totalProgress = downloadList.reduce((sum, item) => sum + (item.progress || 0), 0)
     return Math.round(totalProgress / downloadList.length)
   }
 
@@ -117,8 +69,13 @@ const HeaderDownloadButton: React.FC = () => {
 
   // 获取图标
   const getIcon = (): JSX.Element => {
-    if (hasActiveDownloads && getOverallProgress() >= 100) {
-      return <Check size={14} color="white" />
+    if (hasActiveDownloads) {
+      if (getOverallProgress() >= 100) {
+        return <Check size={14} color="white" />
+      } else {
+        // 下载中显示旋转的加载图标
+        return <Loader2 size={14} color="white" className="animate-spin" />
+      }
     }
     return <ArrowDownToLine size={14} color="white" />
   }
@@ -126,30 +83,6 @@ const HeaderDownloadButton: React.FC = () => {
   // 点击处理
   const handleClick = (): void => {
     setShowPanel(!showPanel)
-  }
-
-  // 添加下载任务
-/*  const handleAddDownload = (): void => {
-    const newDownload: any = {
-      id: Math.random().toString(36).substr(2, 9),
-      title: `歌曲 ${Date.now()}`,
-      artist: '艺术家',
-      size: `${(Math.random() * 3 + 2).toFixed(1)}MB`,
-      progress: 0,
-      status: 'downloading'
-    }
-    setDownloads((prev) => [newDownload, ...prev])
-    setShowPanel(false)
-  }*/
-
-  // 移除下载任务
-  const removeDownload = (id: string): void => {
-    setDownloads((prev) => prev.filter((item) => item.id !== id))
-  }
-
-  // 清空历史记录
-  const clearHistory = (): void => {
-    setHistory([])
   }
 
   return (
@@ -201,7 +134,7 @@ const HeaderDownloadButton: React.FC = () => {
                     : 'text-gray-400 hover:text-white border-transparent'
                 }`}
               >
-                当前下载 ({downloads.length})
+                当前下载 ({downloadList.length})
               </button>
               <button
                 onClick={() => setActiveTab('history')}
@@ -211,7 +144,7 @@ const HeaderDownloadButton: React.FC = () => {
                     : 'text-gray-400 hover:text-white border-transparent'
                 }`}
               >
-                下载历史 ({history.length})
+                下载历史 ({downloadFinishList.length})
               </button>
             </div>
 
@@ -227,18 +160,25 @@ const HeaderDownloadButton: React.FC = () => {
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-gray-300 text-sm">当前下载任务</h4>
+                      <h4
+                        className={
+                          'text-[13px] text-[#F31260] hover:text-[#F54180] hover:cursor-pointer'
+                        }
+                      >
+                        清空
+                      </h4>
                     </div>
 
-                    {downloads.length === 0 ? (
+                    {downloadList.length === 0 ? (
                       <div className="text-center py-6 text-gray-400">
                         <ArrowDownToLine size={24} className="mx-auto mb-2 opacity-50" />
                         <p className="text-sm">暂无下载任务</p>
                       </div>
                     ) : (
                       <div className="space-y-1">
-                        {downloads.map((item, index) => (
+                        {downloadList.map((item, index) => (
                           <div
-                            key={item.id}
+                            key={`download-${item.id}-${index}`}
                             className={`download-item relative p-1.5 rounded-lg transition-all duration-300 hover:scale-[1.02] animate-in slide-in-from-left overflow-hidden ${
                               item.status === 'downloading'
                                 ? 'bg-green-100/10 border border-green-500/20'
@@ -257,7 +197,7 @@ const HeaderDownloadButton: React.FC = () => {
                               <div className="flex-1 min-w-0 flex items-center gap-2">
                                 <div className="flex-1 min-w-0">
                                   <span className="text-white font-medium text-xs truncate">
-                                    {item.title}
+                                    {item.music_title}
                                   </span>
                                   <span className="text-gray-400 text-xs ml-1">
                                     - {item.artist}
@@ -272,10 +212,17 @@ const HeaderDownloadButton: React.FC = () => {
                                       : 'text-blue-400'
                                   }`}
                                 >
-                                  {Math.round(item.progress)}%
+                                  {Math.round(item.progress || 0)}%
                                 </span>
                                 <button
-                                  onClick={() => removeDownload(item.id)}
+                                  onClick={() => {
+                                    // 调用全局的取消下载函数
+                                    if ((window as any).cancelDownload) {
+                                      (window as any).cancelDownload(item.id)
+                                    } else {
+                                      console.log('取消下载函数未找到')
+                                    }
+                                  }}
                                   className="w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center hover:bg-red-500 transition-colors"
                                   title="移除"
                                 >
@@ -287,7 +234,7 @@ const HeaderDownloadButton: React.FC = () => {
                             {/* 详细信息行 - 更紧凑 */}
                             <div className="flex justify-between text-xs text-gray-400 relative z-10 mt-0.5">
                               <span>{item.speed || '计算中...'}</span>
-                              <span>{item.size}</span>
+                              <span>{item.size || ''}</span>
                             </div>
 
                             {/* 下载状态指示器 */}
@@ -305,27 +252,18 @@ const HeaderDownloadButton: React.FC = () => {
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-gray-300 text-sm">下载历史</h4>
-                      {history.length > 0 && (
-                        <button
-                          onClick={clearHistory}
-                          className="flex items-center gap-1 text-red-400 hover:text-red-300 text-xs transition-colors"
-                        >
-                          <Trash2 size={12} />
-                          清空
-                        </button>
-                      )}
                     </div>
 
-                    {history.length === 0 ? (
+                    {downloadFinishList.length === 0 ? (
                       <div className="text-center py-6 text-gray-400">
                         <Clock size={24} className="mx-auto mb-2 opacity-50" />
                         <p className="text-sm">暂无下载历史</p>
                       </div>
                     ) : (
                       <div className="space-y-1">
-                        {history.map((item, index) => (
+                        {downloadFinishList.map((item, index) => (
                           <div
-                            key={item.id}
+                            key={`history-${item.id}-${index}`}
                             className="download-item p-1.5 bg-gray-700 border border-gray-600 rounded-lg transition-all duration-300 hover:scale-[1.02] animate-in slide-in-from-right relative overflow-hidden"
                             style={{
                               animationDelay: `${index * 50}ms`,
@@ -338,7 +276,7 @@ const HeaderDownloadButton: React.FC = () => {
                               <div className="flex-1 min-w-0 flex items-center gap-2">
                                 <div className="flex-1 min-w-0">
                                   <span className="text-white font-medium text-xs truncate">
-                                    {item.title}
+                                    {item.music_title}
                                   </span>
                                   <span className="text-gray-400 text-xs ml-1">
                                     - {item.artist}
@@ -356,7 +294,7 @@ const HeaderDownloadButton: React.FC = () => {
                             <div className="flex justify-between text-xs text-gray-400 relative z-10 mt-0.5">
                               <span>下载完成</span>
                               <div className="flex items-center gap-2">
-                                <span>{item.size}</span>
+                                <span>{item.size || ''}</span>
                                 {item.completedAt && (
                                   <span className="text-green-400">
                                     {new Date(item.completedAt).toLocaleTimeString()}

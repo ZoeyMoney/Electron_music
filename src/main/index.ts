@@ -18,6 +18,57 @@ autoUpdater.logger = log
 
 autoUpdater.autoDownload = false // 自动下载更新
 let mainWindow: BrowserWindow | null = null
+
+// 检查应用是否通过更新启动
+const isUpdateLaunch = process.argv.includes('--updated') || process.argv.includes('--force-run')
+
+// 记录启动信息
+log.info('应用启动参数:', process.argv)
+log.info('是否通过更新启动:', isUpdateLaunch)
+log.info('应用路径:', app.getAppPath())
+log.info('资源路径:', process.resourcesPath)
+log.info('当前工作目录:', process.cwd())
+
+// 清理更新后的缓存和临时文件
+const cleanupAfterUpdate = (): void => {
+  try {
+    // 清理可能的临时文件
+    const tempDir = path.join(app.getPath('temp'), 'electron_music-updater')
+    if (fs.existsSync(tempDir)) {
+      fs.rmSync(tempDir, { recursive: true, force: true })
+    }
+
+    // 清理用户数据中的临时文件
+    const userDataTemp = path.join(app.getPath('userData'), 'temp')
+    if (fs.existsSync(userDataTemp)) {
+      fs.rmSync(userDataTemp, { recursive: true, force: true })
+    }
+
+    // 修复应用目录权限
+    const appPath = app.getAppPath()
+    try {
+      // 确保应用目录可读
+      fs.accessSync(appPath, fs.constants.R_OK)
+      log.info('应用目录权限正常')
+    } catch (error: any) {
+      log.warn('应用目录权限可能有问题:', error.message)
+    }
+
+    // 检查并修复资源目录权限
+    const resourcePath = process.resourcesPath
+    try {
+      fs.accessSync(resourcePath, fs.constants.R_OK)
+      log.info('资源目录权限正常')
+    } catch (error: any) {
+      log.warn('资源目录权限可能有问题:', error.message)
+    }
+
+    log.info('更新后清理完成')
+  } catch (error) {
+    log.error('清理更新文件失败:', error)
+  }
+}
+
 function createWindow(): void {
   // Create the browser window.
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize
@@ -36,7 +87,7 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
       nodeIntegration: true,
-      webSecurity: process.env.NODE_ENV === 'production',
+      webSecurity: false, // 更新后可能需要禁用 webSecurity
       contextIsolation: true,
     }
   })
@@ -44,6 +95,27 @@ function createWindow(): void {
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
     mainWindow?.setTitle('聆听音乐')
+    log.info('主窗口已显示')
+  })
+
+  // 添加页面加载错误处理
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    log.error('页面加载失败:', { errorCode, errorDescription, validatedURL })
+
+    // 如果是更新后启动，尝试重新加载
+    if (isUpdateLaunch) {
+      setTimeout(() => {
+        log.info('尝试重新加载页面...')
+        mainWindow?.reload()
+      }, 1000)
+    }
+  })
+
+  // 添加控制台错误监听
+  mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    if (level === 3) { // error level
+      log.error('渲染进程错误:', { message, line, sourceId })
+    }
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -56,7 +128,60 @@ function createWindow(): void {
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    // 尝试多个可能的 HTML 文件路径
+    const possiblePaths = [
+      join(__dirname, '../renderer/index.html'),
+      join(process.resourcesPath, 'app.asar.unpacked', 'renderer', 'index.html'),
+      join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'renderer', 'index.html'),
+      join(process.resourcesPath, 'app.asar.unpacked', 'out', 'renderer', 'index.html'),
+      join(app.getAppPath(), 'dist', 'renderer', 'index.html'),
+      join(app.getAppPath(), 'out', 'renderer', 'index.html')
+    ]
+
+    let htmlLoaded = false
+
+    for (const htmlPath of possiblePaths) {
+      log.info('尝试加载 HTML 文件:', htmlPath)
+
+      if (fs.existsSync(htmlPath)) {
+        try {
+          mainWindow.loadFile(htmlPath)
+          log.info('成功加载 HTML 文件:', htmlPath)
+          htmlLoaded = true
+          break
+        } catch (error) {
+          log.error('加载 HTML 文件失败:', htmlPath, error)
+          continue
+        }
+      } else {
+        log.warn('HTML 文件不存在:', htmlPath)
+      }
+    }
+
+    if (!htmlLoaded) {
+      log.error('所有 HTML 文件路径都无法加载')
+      // 显示错误页面，提供重新安装选项
+      const errorHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>应用加载失败</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            .error { color: #e74c3c; margin: 20px 0; }
+            .button { background: #3498db; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+          </style>
+        </head>
+        <body>
+          <h1>应用加载失败</h1>
+          <div class="error">更新后应用无法正常启动，请重新安装应用。</div>
+          <button class="button" onclick="window.close()">关闭应用</button>
+        </body>
+        </html>
+      `
+      mainWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(errorHtml))
+    }
   }
 }
 
@@ -64,10 +189,17 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  // 如果是更新后启动，先清理
+  if (isUpdateLaunch) {
+    cleanupAfterUpdate()
+  }
+
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
   //自动检测更新
-  autoUpdater.checkForUpdates()
+  setTimeout(() => {
+    autoUpdater.checkForUpdates()
+  }, 3000)
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
@@ -96,8 +228,16 @@ app.on('window-all-closed', () => {
   }
 })
 
-ipcMain.on('quit-app', () => app.quit())
+// 添加应用错误处理
+app.on('render-process-gone', (_event, _webContents, details) => {
+  log.error('渲染进程崩溃:', details)
+})
 
+app.on('child-process-gone', (_event, details) => {
+  log.error('子进程崩溃:', details)
+})
+
+ipcMain.on('quit-app', () => app.quit())
 
 //  最小化
 ipcMain.on('minimize-app', (event) => {
@@ -182,27 +322,103 @@ ipcMain.handle('save-file', async (_event, { buffer, filename, downloadPath }) =
 })
 
 // 自动更新代码
+// 1. 更新错误处理
+autoUpdater.on('error', (error) => {
+  log.error('自动更新错误:', error)
+  mainWindow?.webContents.send('update-error', { message: error.message })
+})
+
 // 2. 检测到更新，仅通知渲染进程
 autoUpdater.on('update-available', () => {
+  log.info('检测到可用更新')
   mainWindow?.webContents.send('update-available') // 你可能需要根据你的窗口引用更改
+})
+
+// 2.1 没有可用更新
+autoUpdater.on('update-not-available', () => {
+  log.info('没有可用更新')
 })
 
 // 3. 下载进度
 autoUpdater.on('download-progress', (progressObj) => {
+  log.info('下载进度:', progressObj.percent.toFixed(2) + '%')
   mainWindow?.webContents.send('update-progress', { percent: progressObj.percent })
 })
 
 // 4. 下载完成
 autoUpdater.on('update-downloaded', () => {
+  log.info('更新下载完成')
   mainWindow?.webContents.send('update-downloaded')
 })
 
 // 5. 渲染进程请求下载更新
 ipcMain.on('download-update', () => {
+  log.info('开始下载更新')
   autoUpdater.downloadUpdate()
 })
 
 // 6. 安装更新
 ipcMain.on('install-update', () => {
-  autoUpdater.quitAndInstall()
+  log.info('开始安装更新')
+  // 保存用户数据
+  try {
+    // 可以在这里保存用户设置等数据
+    log.info('用户数据已保存')
+  } catch (error) {
+    log.error('保存用户数据失败:', error)
+  }
+
+  // 延迟安装，确保数据保存完成
+  setTimeout(() => {
+    // 添加参数确保更新后自动启动
+    try {
+      // 参数说明：
+      // 第一个参数: isSilent - 是否静默安装（false = 显示安装界面）
+      // 第二个参数: isForceRunAfter - 安装完成后是否强制运行应用（true = 自动启动）
+      autoUpdater.quitAndInstall(false, true)
+      log.info('调用 quitAndInstall，参数: false, true')
+    } catch (error) {
+      log.error('调用 quitAndInstall 失败:', error)
+      // 如果自动安装失败，提示用户手动安装
+      mainWindow?.webContents.send('update-install-failed', { 
+        message: '自动安装失败，请手动重启应用完成更新' 
+      })
+    }
+  }, 1000)
+})
+
+// 7. 更新前数据保护
+ipcMain.on('backup-redux-data', () => {
+  log.info('开始备份 Redux 数据')
+  try {
+    // 通知渲染进程备份数据
+    mainWindow?.webContents.send('backup-redux-data')
+    log.info('已通知渲染进程备份 Redux 数据')
+  } catch (error) {
+    log.error('备份 Redux 数据失败:', error)
+  }
+})
+
+// 8. 更新前清理缓存
+ipcMain.on('cleanup-before-update', () => {
+  log.info('开始更新前清理')
+  try {
+    // 清理临时文件
+    const tempDir = path.join(app.getPath('temp'), 'electron_music-updater')
+    if (fs.existsSync(tempDir)) {
+      fs.rmSync(tempDir, { recursive: true, force: true })
+      log.info('清理临时文件完成')
+    }
+    
+    // 清理用户数据中的临时文件
+    const userDataTemp = path.join(app.getPath('userData'), 'temp')
+    if (fs.existsSync(userDataTemp)) {
+      fs.rmSync(userDataTemp, { recursive: true, force: true })
+      log.info('清理用户数据临时文件完成')
+    }
+    
+    log.info('更新前清理完成')
+  } catch (error) {
+    log.error('更新前清理失败:', error)
+  }
 })

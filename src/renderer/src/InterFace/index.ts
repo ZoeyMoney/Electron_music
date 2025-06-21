@@ -130,5 +130,9 @@ export interface DownloadSongProps {
   music_title: string //歌曲名称
   pic?: string //歌曲图片
   mp3_url?: string //歌曲mp3链接
-  status?: string
+  status?: 'downloading' | 'completed' | 'error' //下载状态
+  progress?: number //下载进度 0-100
+  speed?: string //下载速度
+  size?: string //文件大小
+  completedAt?: string //完成时间
 }

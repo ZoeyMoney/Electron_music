@@ -77,6 +77,15 @@ function App(): JSX.Element {
     if (isInstalling || isDownloading) return
 
     if (hasUpdate && !isDownloaded) {
+      // 更新前数据保护
+      try {
+        window.api.backupReduxData?.()
+        window.api.cleanupBeforeUpdate?.()
+        console.log('更新前数据保护完成')
+      } catch (error) {
+        console.error('更新前数据保护失败:', error)
+      }
+      
       window.api.downloadUpdate?.()
       setIsDownloading(true)
       setProgress(0)
@@ -84,6 +93,14 @@ function App(): JSX.Element {
     }
 
     if (isDownloaded) {
+      // 安装前再次备份数据
+      try {
+        window.api.backupReduxData?.()
+        console.log('安装前数据备份完成')
+      } catch (error) {
+        console.error('安装前数据备份失败:', error)
+      }
+      
       setIsInstalling(true)
       try {
         window.api.installUpdate?.()
@@ -107,7 +124,7 @@ function App(): JSX.Element {
             className="max-w-md mt-4"
             value={progress}
             showValueLabel
-            size="md"
+            size="sm"
             color="success"
           />
         </>
@@ -115,11 +132,11 @@ function App(): JSX.Element {
     }
 
     if (hasUpdate && !isDownloaded) {
-      return <p>检测到新版本，点击“现在下载”以开始更新。</p>
+      return <p>检测到新版本，点击"现在下载"以开始更新。</p>
     }
 
     if (isDownloaded) {
-      return <p>新版本已准备就绪，点击“立即安装”开始升级。</p>
+      return <p>新版本已准备就绪，点击"立即安装"开始升级。</p>
     }
 
     return null

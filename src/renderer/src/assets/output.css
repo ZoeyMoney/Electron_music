@@ -4256,6 +4256,25 @@ video {
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
+.text-\[\] {
+  color: ;
+}
+
+.text-\[\#C20E4D\] {
+  --tw-text-opacity: 1;
+  color: rgb(194 14 77 / var(--tw-text-opacity, 1));
+}
+
+.text-\[\#F31260\] {
+  --tw-text-opacity: 1;
+  color: rgb(243 18 96 / var(--tw-text-opacity, 1));
+}
+
+.text-\[\#F54180\] {
+  --tw-text-opacity: 1;
+  color: rgb(245 65 128 / var(--tw-text-opacity, 1));
+}
+
 .underline {
   text-decoration-line: underline;
 }
@@ -6508,6 +6527,20 @@ body {
 .hover\:text-white:hover {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+
+.hover\:text-\[\]:hover {
+  color: ;
+}
+
+.hover\:text-\[\#F871A0\]:hover {
+  --tw-text-opacity: 1;
+  color: rgb(248 113 160 / var(--tw-text-opacity, 1));
+}
+
+.hover\:text-\[\#F54180\]:hover {
+  --tw-text-opacity: 1;
+  color: rgb(245 65 128 / var(--tw-text-opacity, 1));
 }
 
 .hover\:underline:hover {

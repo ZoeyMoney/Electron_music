@@ -43,3 +43,29 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     </Provider>
   </QueryClientProvider>
 )
+
+// 监听更新前数据保护
+if (window.api) {
+  // 监听备份 Redux 数据的请求
+  window.api.onBackupReduxData?.(() => {
+    try {
+      console.log('收到备份 Redux 数据请求')
+      // 获取当前 Redux 状态
+      const currentState = store.getState()
+      const stateString = JSON.stringify(currentState)
+
+      // 创建备份
+      const backupKey = `persist:root_backup_${Date.now()}`
+      localStorage.setItem(backupKey, stateString)
+      console.log('Redux 数据备份完成:', backupKey)
+
+      // 清理旧的备份（保留最近5个）
+      const backupKeys = Object.keys(localStorage).filter(k => k.startsWith('persist:root_backup_'))
+      if (backupKeys.length > 5) {
+        backupKeys.sort().slice(0, -5).forEach(k => localStorage.removeItem(k))
+      }
+    } catch (error) {
+      console.error('备份 Redux 数据失败:', error)
+    }
+  })
+}

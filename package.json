@@ -1,6 +1,6 @@
 {
   "name": "electron_music",
-  "version": "1.0.2",
+  "version": "1.2.2",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -16,10 +16,13 @@
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
-    "build:win": "npm run build && electron-builder --win",
-    "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux",
-    "wincss:watch": "npx tailwindcss -i ./src/renderer/src/assets/main.css -o ./src/renderer/src/assets/output.css --watch"
+    "build:win": "npm run build && electron-builder --win --config",
+    "build:mac": "npm run build && electron-builder --mac --config",
+    "build:linux": "npm run build && electron-builder --linux --config",
+    "wincss:watch": "npx tailwindcss -i ./src/renderer/src/assets/main.css -o ./src/renderer/src/assets/output.css --watch",
+    "preview": "electron-vite preview",
+    "debug-update": "node scripts/debug-update.js",
+    "test-update": "npm run build && electron-builder --win --config --publish=never"
   },
   "build": {
     "appId": "1984898516@qq.com",

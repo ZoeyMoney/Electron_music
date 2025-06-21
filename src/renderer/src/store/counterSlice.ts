@@ -41,36 +41,63 @@ const initialState: RootState = {
   downloadFinishList: [] // 下载完成音乐列表
 }
 
+// 安全的数组操作函数
+const ensureArray = (value: any): any[] => {
+  if (Array.isArray(value)) {
+    return value
+  }
+  console.warn('Expected array but got:', typeof value, value)
+  return []
+}
+
+const safeFilter = (array: any[], predicate: (item: any) => boolean): any[] => {
+  const safeArray = ensureArray(array)
+  return safeArray.filter(predicate)
+}
+
+const safeMap = (array: any[], mapper: (item: any) => any): any[] => {
+  const safeArray = ensureArray(array)
+  return safeArray.map(mapper)
+}
+
 export const counterSlice = createSlice({
   name: 'counter',
   initialState,
   reducers: {
     // 我喜欢的音乐
     setMyLikeMusic: (state, action: PayloadAction<any>) => {
+      if (!Array.isArray(state.myLikeMusic)) {
+        state.myLikeMusic = []
+      }
       state.myLikeMusic.push(action.payload)
     },
     //保存自建歌单的歌曲
     setMyLikeMusicList: (state, action: PayloadAction<any>) => {
       const { type, data, id } = action.payload
       console.log(data)
+      // 确保 myLikeMusic 是数组
+      if (!Array.isArray(state.myLikeMusic)) {
+        state.myLikeMusic = []
+      }
+      
       if (type === 'add') {
         //根据id进行添加
-        state.myLikeMusic = state.myLikeMusic.map((item) => {
+        state.myLikeMusic = safeMap(state.myLikeMusic, (item) => {
           if (item.id === id) {
             return {
               ...item,
-              songs: [...item.songs, data]
+              songs: [...(Array.isArray(item.songs) ? item.songs : []), data]
             }
           }
           return item
         })
       } else if (type === 'remove') {
         //根据id进行删除数据
-        state.myLikeMusic = state.myLikeMusic.map((item) => {
+        state.myLikeMusic = safeMap(state.myLikeMusic, (item) => {
           if (item.id === id) {
             return {
               ...item,
-              songs: item.songs.filter((item: any) => item.href !== data.href)
+              songs: safeFilter(Array.isArray(item.songs) ? item.songs : [], (song: any) => song.href !== data.href)
             }
           }
           return item
@@ -84,7 +111,7 @@ export const counterSlice = createSlice({
     //删除自建菜单
     deleteMyLikeMusicList: (state, action: PayloadAction<any>) => {
       const { id } = action.payload
-      state.myLikeMusic = state.myLikeMusic.filter((item: any) => item.id !== id)
+      state.myLikeMusic = safeFilter(state.myLikeMusic, (item: any) => item.id !== id)
     },
     // 保存播放信息
     setPlayInfo: (state, action: PayloadAction<any>) => {
@@ -97,7 +124,7 @@ export const counterSlice = createSlice({
     // 添加历史播放
     setHistoryPlayList: (state, action: PayloadAction<any>) => {
       //获取的数据  放到 historyPlayList
-      if (!state.historyPlayList) {
+      if (!Array.isArray(state.historyPlayList)) {
         state.historyPlayList = []
       }
       state.historyPlayList.push(action.payload)
@@ -112,9 +139,7 @@ export const counterSlice = createSlice({
     },
     //删除本地歌曲
     removeMusicLocalDataList: (state, action: PayloadAction<string>) => {
-      state.localMusicList = state.localMusicList.filter(
-        (item) => !action.payload.includes(item.id)
-      )
+      state.localMusicList = safeFilter(state.localMusicList, (item) => !action.payload.includes(item.id))
     },
     //更改播放类型
     setMenuDataType: (state, action: PayloadAction<any>) => {
@@ -127,14 +152,29 @@ export const counterSlice = createSlice({
     },
     //添加下载列表
     addDownloadList: (state, action: PayloadAction<any>) => {
-      state.downloadList.push(action.payload)
+      if (!Array.isArray(state.downloadList)) {
+        state.downloadList = []
+      }
+      const existingIndex = state.downloadList.findIndex(item => item.id === action.payload.id)
+      if (existingIndex !== -1) {
+        // 如果已存在，更新现有项
+        state.downloadList[existingIndex] = action.payload
+      } else {
+        // 如果不存在，添加新项
+        state.downloadList.push(action.payload)
+      }
     },
     // 删除下载列表 并且 保存到下载历史
     deleteDownloadList: (state, action: PayloadAction<any>) => {
-      state.downloadList = state.downloadList.filter(
-        (item) => item.id !== action.payload.id
-      )
+      state.downloadList = safeFilter(state.downloadList, (item) => item.id !== action.payload.id)
+      if (!Array.isArray(state.downloadFinishList)) {
+        state.downloadFinishList = []
+      }
       state.downloadFinishList.push(action.payload)
+    },
+    // 移除下载任务（取消下载，不保存到历史）
+    removeDownloadTask: (state, action: PayloadAction<string>) => {
+      state.downloadList = safeFilter(state.downloadList, (item) => item.id !== action.payload)
     }
   }
 })
@@ -153,5 +193,6 @@ export const {
   setDownloadPath, //设置下载地址
   addDownloadList, //添加下载列表
   deleteDownloadList, // 移除下载列表
+  removeDownloadTask, // 移除下载任务
 } = counterSlice.actions
 export default counterSlice.reducer

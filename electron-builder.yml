@@ -9,15 +9,32 @@ files:
   - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - 'dist/**/*'
+  - 'out/**/*'
+  - 'package.json'
 asarUnpack:
   - resources/**
+  - dist/**
+  - out/**
 win:
   executableName: electron_music
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: ${name}-${version}-setup.${ext}
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+  oneClick: true
+  allowToChangeInstallationDirectory: true
+  createStartMenuShortcut: true
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  perMachine: false
+  silent: true
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
@@ -40,6 +57,13 @@ appImage:
 npmRebuild: false
 publish:
   provider: generic
-  url: https://example.com/auto-updates
+  url: https://github.com/your-username/your-repo/releases/latest/download
+  updaterCacheDirName: electron_music-updater
+  publishAutoUpdate: true
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
+
+# 更新配置
+afterSign: scripts/notarize.js
+forceCodeSigning: false
+generateUpdatesFilesForAllChannels: true

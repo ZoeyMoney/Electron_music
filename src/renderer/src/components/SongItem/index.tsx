@@ -15,7 +15,7 @@ import {
   useHandleDoubleClickPlay
 } from '@renderer/utils'
 import DropdownMenu from "@renderer/components/DropdownMenu/DropdownMenu"
-import { addDownloadList, setMyLikeMusicList } from '@renderer/store/counterSlice'
+import { addDownloadList, setMyLikeMusicList, deleteDownloadList, removeDownloadTask } from '@renderer/store/counterSlice'
 import { ModalWrapper } from '@renderer/components/ModalWrapper'
 import { useNavigate } from 'react-router-dom'
 // import { addToast } from '@heroui/react'
@@ -45,6 +45,8 @@ export const SongItem: React.FC<SongItemProps> = ({
   const musicTableRef = useRef<{
     handleToggleLike: (song: SongProps, groupId?: string | number, forceAdd?: boolean) => Promise<void>
   }>(null)
+  // 存储取消下载的 AbortController
+  const abortControllersRef = useRef<Map<string, AbortController>>(new Map())
   const {
     showMenu,
     setShowMenu,
@@ -139,67 +141,216 @@ export const SongItem: React.FC<SongItemProps> = ({
   const menuItems = isLocalSong
     ? getLocalMenuItems(item, () => setShowMenu(false), handleAddToPlaylist, sourceType)
     : getMenuItems(item, () => setShowMenu(false), handleAddToPlaylist, sourceType, {
-        onDownload: (song) => {
+        onDownload: async (song) => {
           if (downloadPath === null) {
             setDownloadModalOpen(true)
             return
           }
+          
+          // 1. 添加到下载列表 - 使用时间戳确保唯一性
+          const downloadId = `${Date.now()}-${song.id || song.href}` // 用时间戳 + id 作为唯一标识
+          // 创建 AbortController 用于取消下载
+          const abortController = new AbortController()
+          abortControllersRef.current.set(downloadId, abortController)
+          
           dispatch(
             addDownloadList({
               ...song,
-              status: 'downloading'
+              id: downloadId,
+              status: 'downloading',
+              progress: 0,
+              speed: '0 MB/s',
+              size: '计算中...'
             })
           )
-          /*console.log(song,'songs')
-          if (downloadPath === null) {
-            setDownloadModalOpen(true)
-          }
-          //获取下载地址
-          createSongInfo(song).then(async (res) => {
-            const url = res.data.mp3_url;
+          
+          try {
+            // 2. 获取下载链接
+            const res = await import('@renderer/Api').then(m => m.getMusicInfo({ href: song.href }))
+            const url = res.data.mp3_url
             if (!url) {
-              addToast({ title: '无下载链接', timeout: 2000, color: 'danger' });
-              return;
+              // 下载链接无效
+              dispatch(
+                deleteDownloadList({
+                  ...song,
+                  id: downloadId,
+                  status: 'error',
+                  progress: 0,
+                })
+              )
+              abortControllersRef.current.delete(downloadId)
+              return
             }
-
-            const sanitize = (str: string): string => str.replace(/[/\\:*?"<>|]/g, '_');
-            const filename = `${sanitize(song.artist || 'unknown_artist')} - ${sanitize(song.music_title || 'unknown_title')}.mp3`;
-            console.log(filename, 'filename');
-
-            try {
-              const response = await fetch(url);
-              if (!response.ok) throw new Error('网络错误');
-
-              const blob = await response.blob();
-              const blobUrl = URL.createObjectURL(blob);
-
-              const link = document.createElement('a');
-              link.href = blobUrl;
-              link.download = filename;
-              document.body.appendChild(link);
-              link.click();
-              link.remove();
-
-              URL.revokeObjectURL(blobUrl);
-
-              addToast({
-                title: '下载开始',
-                timeout: 2000,
-                color: 'success',
-              });
-            } catch (error) {
-              addToast({
-                title: '下载失败',
-                timeout: 2000,
-                color: 'danger',
-              });
-              console.error(error);
+            
+            // 3. 下载文件
+            const response = await fetch(url, { signal: abortController.signal })
+            if (!response.ok) throw new Error('网络错误')
+            
+            // 获取文件大小
+            const contentLength = response.headers.get('content-length')
+            const fileSize = contentLength ? `${(parseInt(contentLength) / 1024 / 1024).toFixed(1)} MB` : '未知大小'
+            
+            // 更新文件大小
+            dispatch(
+              addDownloadList({
+                ...song,
+                id: downloadId,
+                status: 'downloading',
+                progress: 0,
+                speed: '0 MB/s',
+                size: fileSize
+              })
+            )
+            
+            // 下载速度限制配置
+            const MAX_SPEED_MBPS = 1 // 限制为 1MB/s
+            const CHUNK_SIZE = 64 * 1024 // 64KB 每次读取
+            const DELAY_MS = (CHUNK_SIZE / (MAX_SPEED_MBPS * 1024 * 1024)) * 1000 // 计算延迟时间
+            
+            // 使用 ReadableStream 来获取下载进度
+            const reader = response.body?.getReader()
+            const chunks: Uint8Array[] = []
+            let receivedLength = 0
+            let lastUpdateTime = Date.now()
+            let lastReceivedLength = 0
+            
+            if (reader) {
+              while (true) {
+                // 检查是否被取消
+                if (abortController.signal.aborted) {
+                  console.log('下载已取消:', downloadId)
+                  break
+                }
+                
+                const { done, value } = await reader.read()
+                if (done) break
+                
+                chunks.push(value)
+                receivedLength += value.length
+                
+                // 计算进度
+                const progress = contentLength 
+                  ? Math.round((receivedLength / parseInt(contentLength)) * 100)
+                  : Math.min(receivedLength / 1024 / 1024, 100) // 如果没有 content-length，用接收到的数据量估算
+                
+                // 计算实时下载速度
+                const currentTime = Date.now()
+                const timeDiff = (currentTime - lastUpdateTime) / 1000 // 转换为秒
+                const dataDiff = receivedLength - lastReceivedLength
+                const speedMBps = timeDiff > 0 ? (dataDiff / 1024 / 1024) / timeDiff : 0
+                
+                // 更新下载进度 - 使用相同的 downloadId，这样会更新现有项而不是创建新项
+                dispatch(
+                  addDownloadList({
+                    ...song,
+                    id: downloadId,
+                    status: 'downloading',
+                    progress: Math.min(progress, 99), // 保留1%给保存过程
+                    speed: `${speedMBps.toFixed(1)} MB/s`,
+                    size: fileSize
+                  })
+                )
+                
+                // 速度限制：如果速度超过限制，添加延迟
+                if (speedMBps > MAX_SPEED_MBPS) {
+                  const delayTime = Math.max(0, DELAY_MS - timeDiff * 1000)
+                  if (delayTime > 0) {
+                    await new Promise(resolve => setTimeout(resolve, delayTime))
+                  }
+                }
+                
+                lastUpdateTime = currentTime
+                lastReceivedLength = receivedLength
+              }
             }
-          });*/
+            
+            // 如果下载被取消，直接返回
+            if (abortController.signal.aborted) {
+              console.log('下载已取消，清理资源')
+              abortControllersRef.current.delete(downloadId)
+              return
+            }
+            
+            // 合并所有chunks
+            const arrayBuffer = new Uint8Array(receivedLength)
+            let position = 0
+            for (const chunk of chunks) {
+              arrayBuffer.set(chunk, position)
+              position += chunk.length
+            }
+            
+            // 4. 生成文件名
+            const sanitize = (str: string) => str.replace(/[\\/:*?"<>|]/g, '_')
+            const filename = `${sanitize(song.artist || 'unknown_artist')} - ${sanitize(song.music_title || 'unknown_title')}.mp3`
+            
+            // 5. 保存到本地
+            await window.api.MusicSaveFile({ 
+              buffer: arrayBuffer, 
+              filename, 
+              downloadPath 
+            })
+            
+            // 6. 下载完成，更新 Redux
+            dispatch(
+              deleteDownloadList({
+                ...song,
+                id: downloadId,
+                status: 'completed',
+                progress: 100,
+                speed: '完成',
+                size: fileSize,
+                completedAt: new Date().toISOString(),
+              })
+            )
+            // 清理 AbortController
+            abortControllersRef.current.delete(downloadId)
+            
+          } catch (error) {
+            // 如果是取消下载导致的错误，不显示错误信息
+            if (error instanceof Error && error.name === 'AbortError') {
+              console.log('下载被用户取消')
+              return
+            }
+            
+            console.error('下载失败:', error)
+            // 下载失败，更新状态
+            dispatch(
+              deleteDownloadList({
+                ...song,
+                id: downloadId,
+                status: 'error',
+                progress: 0,
+                speed: '失败',
+                size: '0 MB'
+              })
+            )
+            // 清理 AbortController
+            abortControllersRef.current.delete(downloadId)
+          }
         }
       })
 
   const isCurrentlyPlaying = audioState.isPlaying && playInfo.id === item.id
+
+  // 取消下载的函数
+  const cancelDownload = (downloadId: string) => {
+    const abortController = abortControllersRef.current.get(downloadId)
+    if (abortController) {
+      abortController.abort()
+      abortControllersRef.current.delete(downloadId)
+      dispatch(removeDownloadTask(downloadId))
+      console.log('已取消下载:', downloadId)
+    }
+  }
+  
+  // 将取消函数暴露给全局，供其他组件使用
+  React.useEffect(() => {
+    ;(window as any).cancelDownload = cancelDownload
+    return () => {
+      delete (window as any).cancelDownload
+    }
+  }, [])
+
   return (
     <div>
       <div
