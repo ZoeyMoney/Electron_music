@@ -38,7 +38,8 @@ const initialState: RootState = {
   },
   downloadPath: null, //下载地址
   downloadList: [], //下载中的音乐列表
-  downloadFinishList: [] // 下载完成音乐列表
+  downloadFinishList: [], // 下载完成音乐列表
+  closeToQuit: false // 是否关闭时退出，默认false为最小化
 }
 
 // 安全的数组操作函数
@@ -175,6 +176,10 @@ export const counterSlice = createSlice({
     // 移除下载任务（取消下载，不保存到历史）
     removeDownloadTask: (state, action: PayloadAction<string>) => {
       state.downloadList = safeFilter(state.downloadList, (item) => item.id !== action.payload)
+    },
+    // 设置是否关闭时退出
+    setCloseToQuit: (state, action: PayloadAction<boolean>) => {
+      state.closeToQuit = action.payload
     }
   }
 })
@@ -194,5 +199,6 @@ export const {
   addDownloadList, //添加下载列表
   deleteDownloadList, // 移除下载列表
   removeDownloadTask, // 移除下载任务
+  setCloseToQuit, // 设置是否关闭时退出
 } = counterSlice.actions
 export default counterSlice.reducer

@@ -1,9 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { addToast, Select, SelectItem, Switch } from '@heroui/react'
 import { SettingDataProps } from '@renderer/InterFace'
 import FolderSelector from '@renderer/components/FolderSelector'
+import { useDispatch, useSelector } from 'react-redux'
+import { setCloseToQuit } from '@renderer/store/counterSlice'
+import { RootState } from '@renderer/store/store'
 
 const SettingMusic: React.FC = () => {
+  const dispatch = useDispatch()
+  const { closeToQuit } = useSelector((state: RootState) => state.counter)
   //代理存储
   const [proxySetting, setProxySetting] = useState<string>('AutoSetting')
   // const { downloadPath } = useSelector((state: RootState) => state.counter)
@@ -27,6 +32,12 @@ const SettingMusic: React.FC = () => {
     console.log(success)
     setProxySetting(event.target.value)
   }
+  // 同步 closeToQuit 到主进程
+  useEffect(() => {
+    if (window.electron) {
+      window.electron.ipcRenderer.send('set-close-to-quit', closeToQuit)
+    }
+  }, [closeToQuit])
   const settingMap: SettingDataProps[] = [
     {
       title: '开机启动/最小化/关闭',
@@ -49,7 +60,13 @@ const SettingMusic: React.FC = () => {
         },
         {
           label: '点击关闭按钮时，最小化潮汐窗口',
-          component: <Switch defaultSelected={false} color="success" />
+          component: (
+            <Switch
+              defaultSelected={closeToQuit}
+              color="success"
+              onChange={(e) => dispatch(setCloseToQuit(e.target.checked))}
+            />
+          )
         }
       ]
     },
@@ -71,15 +88,13 @@ const SettingMusic: React.FC = () => {
         },
         {
           label: '默认下载位置',
-          component: (
-            <FolderSelector placeholder="选择歌曲下载文件夹" />
-          )
+          component: <FolderSelector placeholder="选择歌曲下载文件夹" />
         }
       ]
     },
     {
       title: '代理设置',
-      data:[
+      data: [
         {
           label: '代理类型',
           component: (

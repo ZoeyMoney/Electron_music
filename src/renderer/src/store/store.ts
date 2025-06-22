@@ -130,7 +130,8 @@ const persistConfig = {
           },
           downloadPath: null,
           downloadList: [],
-          downloadFinishList: []
+          downloadFinishList: [],
+          closeToQuit: false // 是否关闭时退出，默认false为最小化
         }
         
         // 合并现有数据与默认状态

@@ -14,6 +14,8 @@ import { ToastProvider } from "@heroui/react";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { persistQueryClient } from '@tanstack/react-query-persist-client'
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
+import { useEffect } from 'react'
+
 //创建全局的QueryClient实例
 const queryClient = new QueryClient()
 const localStoragePersister = createSyncStoragePersister({
@@ -25,6 +27,19 @@ persistQueryClient({
   maxAge: 1000 * 60 * 10, //缓存10分钟
 })
 
+// 同步 closeToQuit 到主进程的组件
+const AppWithSync = () => {
+  const closeToQuit = store.getState().counter.closeToQuit
+  
+  useEffect(() => {
+    if (window.electron) {
+      window.electron.ipcRenderer.send('set-close-to-quit', closeToQuit)
+    }
+  }, [closeToQuit])
+  
+  return <App />
+}
+
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <QueryClientProvider client={queryClient}>
     <Provider store={store}>
@@ -34,7 +49,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
           <NextThemesProvider defaultTheme="dark">
             <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <ToastProvider placement={'top-center'} />
-              <App />
+              <AppWithSync />
             </HashRouter>
           </NextThemesProvider>
         </HeroUIProvider>

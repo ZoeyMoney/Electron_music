@@ -61,6 +61,7 @@ export interface RootState {
   downloadList: DownloadSongProps[]
   // 下载完成音乐的列表
   downloadFinishList: DownloadSongProps[]
+  closeToQuit: boolean // 是否关闭时退出（true为关闭退出，false为最小化）
 }
 
 //播放歌单

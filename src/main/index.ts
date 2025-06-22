@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, screen, dialog } from "electron";
+import { app, shell, BrowserWindow, ipcMain, screen, dialog, Tray, Menu } from "electron";
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -18,6 +18,8 @@ autoUpdater.logger = log
 
 autoUpdater.autoDownload = false // 自动下载更新
 let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
+let closeToQuit = false // 默认后台运行
 
 // 检查应用是否通过更新启动
 const isUpdateLaunch = process.argv.includes('--updated') || process.argv.includes('--force-run')
@@ -183,6 +185,19 @@ function createWindow(): void {
       mainWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(errorHtml))
     }
   }
+
+  // 创建托盘
+  createTray()
+
+  // 拦截关闭事件
+  mainWindow.on('close', (event) => {
+    if (closeToQuit) {
+      // closeToQuit 为 true 时，托盘
+      event.preventDefault()
+      mainWindow?.hide()
+    }
+    // closeToQuit 为 false 时，正常退出
+  })
 }
 
 // This method will be called when Electron has finished
@@ -380,8 +395,8 @@ ipcMain.on('install-update', () => {
     } catch (error) {
       log.error('调用 quitAndInstall 失败:', error)
       // 如果自动安装失败，提示用户手动安装
-      mainWindow?.webContents.send('update-install-failed', { 
-        message: '自动安装失败，请手动重启应用完成更新' 
+      mainWindow?.webContents.send('update-install-failed', {
+        message: '自动安装失败，请手动重启应用完成更新'
       })
     }
   }, 1000)
@@ -409,16 +424,48 @@ ipcMain.on('cleanup-before-update', () => {
       fs.rmSync(tempDir, { recursive: true, force: true })
       log.info('清理临时文件完成')
     }
-    
+
     // 清理用户数据中的临时文件
     const userDataTemp = path.join(app.getPath('userData'), 'temp')
     if (fs.existsSync(userDataTemp)) {
       fs.rmSync(userDataTemp, { recursive: true, force: true })
       log.info('清理用户数据临时文件完成')
     }
-    
+
     log.info('更新前清理完成')
   } catch (error) {
     log.error('更新前清理失败:', error)
   }
 })
+
+// 渲染进程通过IPC同步设置
+ipcMain.on('set-close-to-quit', (_event, value) => {
+  closeToQuit = value
+})
+
+// 创建托盘
+function createTray() {
+  tray = new Tray(path.join(__dirname, '../../resources/icon.png'))
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '显示主界面',
+      click: () => {
+        mainWindow?.show()
+        mainWindow?.focus()
+      }
+    },
+    {
+      label: '退出',
+      click: () => {
+        closeToQuit = true
+        app.quit()
+      }
+    }
+  ])
+  tray.setToolTip('Electron Music')
+  tray.setContextMenu(contextMenu)
+  tray.on('double-click', () => {
+    mainWindow?.show()
+    mainWindow?.focus()
+  })
+}
