@@ -7,14 +7,10 @@ import { LuMinus } from 'react-icons/lu'
 import { IoClose } from 'react-icons/io5'
 import 'react-circular-progressbar/dist/styles.css'
 import HeaderDownloadButton from '@renderer/components/header-download-button'
-import { RootState } from '@renderer/store/store'
-import { useSelector } from 'react-redux'
 
 const HeaderSearch: React.FC = () => {
   const navigate = useNavigate()
   const keyEnterRef = useRef<HTMLInputElement>(null)
-  const closeToQuit = useSelector((state: RootState) => state.counter.closeToQuit)
-
   // 回车确认搜索
   const handleEnter = (e): void => {
     if (e.key === 'Enter') {

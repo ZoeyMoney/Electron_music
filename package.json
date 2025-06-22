@@ -1,6 +1,6 @@
 {
   "name": "electron_music",
-  "version": "1.2.2",
+  "version": "1.2.4",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -60,6 +60,12 @@
         "owner": "ZoeyMoney",
         "repo": "Electron_music",
         "releaseType": "release"
+      }
+    ],
+    "extraResources": [
+      {
+        "from": "resources/icon.png",
+        "to": "icon.png"
       }
     ]
   },

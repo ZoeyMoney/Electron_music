@@ -2,27 +2,27 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
-import counterReducer from './counterSlice'; 
+import counterReducer from './counterSlice';
 
 // 检查是否是更新后的首次启动
-const isUpdateLaunch = window.location.search.includes('updated=true') || 
+const isUpdateLaunch = window.location.search.includes('updated=true') ||
   (window as any).electron?.process?.argv?.includes('--updated')
 
 // 数据完整性检查函数
 const validateReduxData = (data: any): boolean => {
   try {
     if (!data || typeof data !== 'object') return false
-    
+
     // 检查关键字段是否存在且格式正确
     const requiredFields = ['counter']
     for (const field of requiredFields) {
       if (!(field in data)) return false
     }
-    
+
     // 检查 counter 字段的结构
     const counter = data.counter
     if (!counter || typeof counter !== 'object') return false
-    
+
     // 检查关键数组字段
     const arrayFields = ['myLikeMusic', 'playListMusic', 'localMusicList', 'historyPlayList', 'downloadList', 'downloadFinishList']
     for (const field of arrayFields) {
@@ -31,7 +31,7 @@ const validateReduxData = (data: any): boolean => {
         counter[field] = []
       }
     }
-    
+
     return true
   } catch (error) {
     console.error('Redux 数据验证失败:', error)
@@ -44,12 +44,12 @@ const tryRestoreBackup = (key: string): string | null => {
   try {
     const backupKeys = Object.keys(localStorage).filter(k => k.startsWith(`${key}_backup_`))
     if (backupKeys.length === 0) return null
-    
+
     // 使用最新的备份
     backupKeys.sort().reverse()
     const latestBackup = backupKeys[0]
     const backupData = localStorage.getItem(latestBackup)
-    
+
     if (backupData) {
       const parsed = JSON.parse(backupData)
       if (validateReduxData(parsed)) {
@@ -80,8 +80,8 @@ if (isUpdateLaunch) {
         }
       }
     }
-  } catch (error) {
-    console.warn('更新后检测到 Redux 数据解析错误，尝试恢复备份')
+  } catch (e) {
+    console.warn('更新后检测到 Redux 数据解析错误，尝试恢复备份',e)
     const backupData = tryRestoreBackup('persist:root')
     if (backupData) {
       localStorage.setItem('persist:root', backupData)
@@ -101,9 +101,7 @@ const persistConfig = {
   // 迁移函数，处理数据结构变化
   migrate: (state: any) => {
     try {
-      // 如果数据结构发生变化，在这里进行迁移
       if (state && state.counter) {
-        // 确保所有必需的字段都存在
         const defaultState = {
           myLikeMusic: [],
           playListMusic: [],
@@ -131,10 +129,8 @@ const persistConfig = {
           downloadPath: null,
           downloadList: [],
           downloadFinishList: [],
-          closeToQuit: false // 是否关闭时退出，默认false为最小化
+          closeToQuit: false
         }
-        
-        // 合并现有数据与默认状态
         state.counter = { ...defaultState, ...state.counter }
       }
       return Promise.resolve(state)

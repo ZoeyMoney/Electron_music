@@ -1,7 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain, screen, dialog, Tray, Menu } from "electron";
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+// import icon from '../../resources/icon.png?asset'
 import { parseFile } from 'music-metadata'
 import fs from 'fs'
 import path from 'node:path'
@@ -71,6 +71,17 @@ const cleanupAfterUpdate = (): void => {
   }
 }
 
+const getTrayIcon = (): string => {
+  if (app.isPackaged) {
+    // 打包后，图标要放在 extraResources 或 resources 目录下
+    return path.join(process.resourcesPath, 'icon.png')
+  } else {
+    // 开发环境
+    return path.join(__dirname, '../../resources/icon.png')
+  }
+}
+
+
 function createWindow(): void {
   // Create the browser window.
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize
@@ -84,7 +95,7 @@ function createWindow(): void {
     frame: false,
     maximizable: false,
     resizable: false,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    ...(process.platform === 'linux' ? { icon: getTrayIcon() } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -93,6 +104,7 @@ function createWindow(): void {
       contextIsolation: true,
     }
   })
+  // mainWindow.webContents.openDevTools({ mode: 'detach' }) // 或 {mode: 'right'}
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
@@ -444,8 +456,9 @@ ipcMain.on('set-close-to-quit', (_event, value) => {
 })
 
 // 创建托盘
-function createTray() {
-  tray = new Tray(path.join(__dirname, '../../resources/icon.png'))
+const createTray = (): void => {
+  const trayIconPath = getTrayIcon();
+  tray = new Tray(trayIconPath)
   const contextMenu = Menu.buildFromTemplate([
     {
       label: '显示主界面',
