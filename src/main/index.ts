@@ -73,7 +73,7 @@ const cleanupAfterUpdate = (): void => {
 
 const getTrayIcon = (): string => {
   if (app.isPackaged) {
-    // 打包后，图标要放在 extraResources 或 resources 目录下
+    // 打包后，图标在 resources 目录下
     return path.join(process.resourcesPath, 'icon.png')
   } else {
     // 开发环境
@@ -100,7 +100,7 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
       nodeIntegration: true,
-      webSecurity: false, // 更新后可能需要禁用 webSecurity
+      webSecurity: false, // 更新后禁用 webSecurity
       contextIsolation: true,
     }
   })
@@ -358,7 +358,7 @@ autoUpdater.on('error', (error) => {
 // 2. 检测到更新，仅通知渲染进程
 autoUpdater.on('update-available', () => {
   log.info('检测到可用更新')
-  mainWindow?.webContents.send('update-available') // 你可能需要根据你的窗口引用更改
+  mainWindow?.webContents.send('update-available')
 })
 
 // 2.1 没有可用更新
