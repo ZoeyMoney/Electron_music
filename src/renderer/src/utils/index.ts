@@ -236,22 +236,81 @@ export const playNextSong = async (playList: SongProps[], currentId: string): Pr
 
 // 播放上一首歌
 export const playPrevSong = async (): Promise<void> => {
-  const historyPlayList = store.getState().counter.historyPlayList;
-  if (historyPlayList.length > 1) {
-    const prevSong = historyPlayList[historyPlayList.length - 2];
-    store.dispatch(
-      setPlayInfo({
-        music_title: prevSong.music_title,
-        artist: prevSong.artist,
-        href: prevSong.href,
-        pic: prevSong.pic,
-        lrc: prevSong.lrc,
-        loading: false,
-        id: prevSong.id
-      })
-    );
+  const state = store.getState().counter;
+  const currentId = state.playInfo.id;
+  const menuDataType = state.menuDataType;
+
+  console.log('playPrevSong 被调用:', { currentId, menuDataType });
+
+  // 根据当前菜单类型获取对应的播放列表
+  let playList: SongProps[] = [];
+
+  switch (menuDataType) {
+    case 'playListMusicType':
+      playList = getPlayListMusic();
+      break;
+    case 'allMusicList':
+      const localMusic = getLocalMusicList();
+      const getLikeSongs = getSelfPlayList();
+      playList = [
+        ...localMusic,
+        ...getLikeSongs.flatMap((item) => item.songs),
+      ];
+      break;
+    case 'localMusicList':
+      playList = getLocalMusicList();
+      break;
+    case '1':
+      const likeSongs = getSelfPlayList();
+      playList = likeSongs[0]?.songs || [];
+      break;
+    default:
+      const playLists = getSelfPlayList();
+      const targetList = playLists.find((item) => String(item.id) === String(menuDataType));
+      playList = targetList?.songs || [];
+      break;
+  }
+
+  console.log('获取到的播放列表:', playList);
+
+  if (!playList || playList.length === 0) {
+    console.warn('播放列表为空');
+    return;
+  }
+
+  const currentIndex = playList.findIndex((item) => item.id === currentId);
+  console.log('当前歌曲索引:', currentIndex, '播放列表长度:', playList.length);
+
+  if (getRandomPlay()) {
+    // 随机播放模式
+    if (playList.length === 1) {
+      await fetchAndDispatchPlayInfo(playList[0]);
+      return;
+    }
+    // 随机选曲且避免当前曲重复
+    let randomIndex;
+    do {
+      randomIndex = Math.floor(Math.random() * playList.length);
+    } while (randomIndex === currentIndex);
+
+    await fetchAndDispatchPlayInfo(playList[randomIndex]);
   } else {
-    console.log('没有上一首');
+    // 顺序播放上一首
+    if (currentIndex === -1) {
+      console.warn('当前歌曲未找到，播放第一首');
+      await fetchAndDispatchPlayInfo(playList[0]);
+      return;
+    }
+
+    if (currentIndex > 0) {
+      // 播放上一首
+      console.log('播放上一首，索引:', currentIndex - 1);
+      await fetchAndDispatchPlayInfo(playList[currentIndex - 1]);
+    } else {
+      console.log('已经是第一首，循环到最后一首');
+      // 循环播放：到达第一首时播放最后一首
+      await fetchAndDispatchPlayInfo(playList[playList.length - 1]);
+    }
   }
 };
 
@@ -650,26 +709,3 @@ export const useDropdownMenu = ({ initialMenuType = '' }: UseDropdownMenuProps):
     selectedItem
   }
 }
-/*排序 默认asc */
-export const sortByDate = <T extends { date: string }>(
-  list: T[],
-  order: 'asc' | 'desc' = 'asc'
-): T[] => {
-  // 拷贝一份，避免修改原数组
-  const arr = [...list];
-
-  arr.sort((a, b) => {
-    // 把 ISO 字符串转换为时间戳
-    const ta = Date.parse(a.date);
-    const tb = Date.parse(b.date);
-
-    // 升序：时间戳小的在前；降序反过来
-    if (order === 'asc') {
-      return ta - tb;
-    } else {
-      return tb - ta;
-    }
-  });
-
-  return arr;
-};

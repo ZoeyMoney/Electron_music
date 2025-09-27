@@ -59,8 +59,6 @@ const PlayerSlider: React.FC = () => {
 
   //下一首 点击后间隔3秒执行一次
   const handleSkipClick = useThrottleFn((direction: 'next' | 'prev') => {
-    console.log('点击方向:', direction)
-
     if (isPlayingAudio()) {
       pauseAudio()
     }

@@ -13,7 +13,7 @@ const PlayerTitle: React.FC = () => {
   const lottieRef = useRef<LottieRefCurrentProps | null>(null)
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { playInfo, audioState } = useSelector((state: RootState) => state.counter)
-  console.log(playInfo)
+  // console.log(playInfo)
   const lyrics = parseLyrics(playInfo?.lrc || '')
   const [currentIndex, setCurrentIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)

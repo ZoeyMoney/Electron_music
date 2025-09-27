@@ -1,5 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { LocalMusicInfo, PlayerState, RootState } from '@renderer/InterFace'
+import { sortByDate } from '@renderer/utils/sortUtils'
+
 
 const initialState: RootState = {
   //自建歌单
@@ -80,14 +82,18 @@ export const counterSlice = createSlice({
       if (!Array.isArray(state.myLikeMusic)) {
         state.myLikeMusic = []
       }
-      
+
       if (type === 'add') {
         //根据id进行添加
         state.myLikeMusic = safeMap(state.myLikeMusic, (item) => {
           if (item.id === id) {
+            const currentSongs = Array.isArray(item.songs) ? item.songs : []
+            const newSongs = [...currentSongs, data]
+            // 按日期降序排序，确保最新的歌曲在前面
+            const sortedSongs = sortByDate(newSongs, 'desc')
             return {
               ...item,
-              songs: [...(Array.isArray(item.songs) ? item.songs : []), data]
+              songs: sortedSongs
             }
           }
           return item
@@ -96,9 +102,12 @@ export const counterSlice = createSlice({
         //根据id进行删除数据
         state.myLikeMusic = safeMap(state.myLikeMusic, (item) => {
           if (item.id === id) {
+            const filteredSongs = safeFilter(Array.isArray(item.songs) ? item.songs : [], (song: any) => song.href !== data.href)
+            // 删除后也保持排序
+            const sortedSongs = sortByDate(filteredSongs, 'desc')
             return {
               ...item,
-              songs: safeFilter(Array.isArray(item.songs) ? item.songs : [], (song: any) => song.href !== data.href)
+              songs: sortedSongs
             }
           }
           return item
@@ -180,6 +189,21 @@ export const counterSlice = createSlice({
     // 设置是否关闭时退出
     setCloseToQuit: (state, action: PayloadAction<boolean>) => {
       state.closeToQuit = action.payload
+    },
+    // 重新排序歌单中的歌曲（按日期降序）
+    reorderMyLikeMusicSongs: (state, action: PayloadAction<number | string>) => {
+      const targetId = action.payload
+      state.myLikeMusic = safeMap(state.myLikeMusic, (item) => {
+        if (item.id === targetId) {
+          const currentSongs = Array.isArray(item.songs) ? item.songs : []
+          const sortedSongs = sortByDate(currentSongs, 'desc')
+          return {
+            ...item,
+            songs: sortedSongs
+          }
+        }
+        return item
+      })
     }
   }
 })
@@ -200,5 +224,6 @@ export const {
   deleteDownloadList, // 移除下载列表
   removeDownloadTask, // 移除下载任务
   setCloseToQuit, // 设置是否关闭时退出
+  reorderMyLikeMusicSongs, // 重新排序歌单中的歌曲
 } = counterSlice.actions
 export default counterSlice.reducer
